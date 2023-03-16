@@ -139,10 +139,9 @@ public class MainActivity extends AppCompatActivity {
 
 // постим первую задачу для выполнения через 1 секунду
         playerHandler.postDelayed(playerRunnable, 1000);
-
+111
     }
 
-    Проверка коммента2
 
  */
 
