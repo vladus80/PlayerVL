@@ -1,39 +1,37 @@
 package com.example.myapplication;
 
 import android.content.Context;
-import android.net.Uri;
 
 import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
 
 import net.bjoernpetersen.m3u.M3uParser;
 import net.bjoernpetersen.m3u.model.M3uEntry;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.vladus.parcer.VLM3uEntity;
+import com.vladus.parcer.VlM3uParcer;
+
 
 public class Channel {
     private String nameChannel;
     private String groupChannel;
     private String epgId;
-    private URL urlChannel;
+    private String urlChannel;
     private String urlLogo;
     private M3uEntry m3uEntry;
     private File filePlaylist;
     private Context context;
     private MediaSource mediaSource;
     private List<Channel>channelList;
+    private VLM3uEntity vlm3uEntity;
 
-    public Channel(String nameChannel, String groupChannel, String epgId, URL urlChannel, String urlLogo) {
+    public Channel(String nameChannel, String groupChannel, String epgId, String urlChannel, String urlLogo) {
         this.nameChannel = nameChannel;
         this.groupChannel = groupChannel;
         this.epgId = epgId;
@@ -41,9 +39,19 @@ public class Channel {
         this.urlLogo = urlLogo;
     }
 
-    public Channel(String nameChannel,  URL urlChannel) {
+    public Channel(String nameChannel,  String urlChannel) {
         this.nameChannel = nameChannel;
         this.urlChannel = urlChannel;
+    }
+
+    public Channel(VLM3uEntity vlm3uEntity) throws MalformedURLException {
+
+        this.vlm3uEntity = vlm3uEntity;
+        this.urlLogo = vlm3uEntity.getLogoChannel();
+        this.groupChannel = vlm3uEntity.getGroupChannel() ;
+        this.epgId = vlm3uEntity.getEpgChannelId();
+        //this.urlChannel = new vlm3uEntity.getUriChannel();
+        this.nameChannel = vlm3uEntity.getNameChannel();
     }
 
     public Channel(M3uEntry m3uEntry) {
@@ -51,8 +59,9 @@ public class Channel {
         this.urlLogo = m3uEntry.getMetadata().getLogo();
         this.groupChannel = m3uEntry.getMetadata().get("group-title");
         this.epgId = m3uEntry.getMetadata().get("tvg-id");
-        this.urlChannel = m3uEntry.getLocation().getUrl();
+        this.urlChannel = String.valueOf(m3uEntry.getLocation().getUrl());
         this.nameChannel = m3uEntry.getTitle();
+
     }
 
     public Channel(File filePlaylist) throws IOException {
@@ -67,6 +76,19 @@ public class Channel {
         }
 
         for (M3uEntry entry :  m3uEntries) {
+            channelList.add(new Channel(entry)) ;
+        }
+
+    }
+
+
+    public Channel(String pathFile) throws MalformedURLException {
+
+        this.channelList = new ArrayList<>();
+        List<VLM3uEntity> vlm3uEntities;
+        vlm3uEntities = VlM3uParcer.parce(pathFile);
+
+        for (VLM3uEntity entry :  vlm3uEntities) {
             channelList.add(new Channel(entry)) ;
         }
 
@@ -104,11 +126,11 @@ public class Channel {
         this.epgId = epgId;
     }
 
-    public URL getUrlChannel() {
+    public String getUrlChannel() {
         return urlChannel;
     }
 
-    public void setUrlChannel(URL urlChannel) {
+    public void setUrlChannel(String urlChannel) {
         this.urlChannel = urlChannel;
     }
 

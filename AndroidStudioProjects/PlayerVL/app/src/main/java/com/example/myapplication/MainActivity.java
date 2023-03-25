@@ -1,149 +1,147 @@
 package com.example.myapplication;
 
-import static android.content.ContentValues.TAG;
 
+import android.annotation.SuppressLint;
 import android.content.res.Configuration;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.ForwardingPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+
+/*
+import wseemann.media.FFmpegMediaMetadataRetriever;
+import wseemann.media.FFmpegMediaMetadataRetriever;
+*/
+
 
 public class MainActivity extends AppCompatActivity {
-
 
     private PlayerView playerView;
     private RecyclerView recyclerView;
     private SimpleExoPlayer player;
-    private Path path;
-    ArrayList <Channel> channels;
     private PowerManager.WakeLock mWakeLock; //Чтобы держать устройство включенным
-    private int recyclerViewScrollPosition;  // позиция scroll (recyclerView) чтобы при повороте восстановить
 
+    @SuppressLint("DefaultLocale")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
+
         playerView = findViewById(R.id.player_view);
         recyclerView = findViewById(R.id.recycler_view);
 
         // Инициализируем менеджер чтобы экран не гас
-        PowerManager powerManager = (PowerManager) getSystemService(this.POWER_SERVICE);
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         mWakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK, "MyApp::MyWakelockTag");
 
+        Player.Listener listener = new Player.Listener() {
+            @Override
+            public void onEvents(@NonNull Player player, Player.Events events) {
+                Player.Listener.super.onEvents(player, events);
 
-
-       /* int resId = getResources().getIdentifier("playlist", "raw", getPackageName()); // получение идентификатора ресурса
-        InputStream inputStream = getResources().openRawResource(resId); // создание InputStream
-        File file = new File(getFilesDir(), "playlist.m3u"); // создание объекта File для сохранения файла
-        try {
-            FileOutputStream outputStream = new FileOutputStream(file); // создание FileOutputStream
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length); // запись данных в FileOutputStream
             }
-            outputStream.flush();
-            outputStream.close();
-            inputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
+            @Override
+            public void onPositionDiscontinuity(@NonNull Player.PositionInfo oldPosition, @NonNull Player.PositionInfo
+                    newPosition, @Player.DiscontinuityReason int reason) {
+                Player.Listener.super.onPositionDiscontinuity(reason);
+                if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                   // Log.d("onPositionDiscontinuity", "Старая позиция "+ oldPosition.mediaItemIndex + " Новая позиция " + newPosition.mediaItemIndex);
+                    //Log.d("onPositionDiscontinuity",String.valueOf( format.height));
 
-        try {
-            File file = Common.getPlaylistFromRaw(this);
-            List<Channel> channelList = new Channel(file).getChannelList();
-            PlayerManager playerManager = new PlayerManager(channelList, this);
-            player = playerManager.getPlayer();
-            setFullScreen();
-            player.prepare();
-            player.setPlayWhenReady(true);
-            playerView.setPlayer(player);
-            //.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL);
-
-            /*Жесты и касания  устанавливаем в классе GestureEventListener*/
-            GestureEventListener gestureEventListener = new GestureEventListener(this, player);
-            player.addListener(gestureEventListener);
-            playerView.setOnTouchListener(gestureEventListener);
-
-            /*Сетка ListviewRecycle*/
-            LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-
-            // Если находимся в портретном режиме, то  заполняем список каналов ListviewRecycle
-            if (recyclerView != null) {
-                recyclerView.setLayoutManager(layoutManager);
-                // Обработка клика  на строке ListviewRecycle (переключаем канал при клике на строку)
-                MyAdapter adapter = new MyAdapter(channelList, (channel, position) -> {
-                    player.seekTo(position, 0);
-                    player.setPlayWhenReady(true);
-
-                });
-                recyclerView.setAdapter(adapter);
+                }
             }
 
+        };
+
+
+        File file = Utils.getPlaylistFromRaw(this );
+        List<Channel> channelList = null;
+        try {
+            channelList = new Channel(file).getChannelList();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
+        String nameGroupFromIntent = getIntent().getStringExtra("name_group");
+        List<Channel> channels = channelList.stream().filter(channel -> channel.getGroupChannel().equals(nameGroupFromIntent)).collect(Collectors.toList());
+        System.out.println(channelList);
 
-        /*
-/// получаем ссылку на Handler, связанный с основным потоком приложения
-        Handler playerHandler = new Handler(Looper.getMainLooper());
+        String playerEx = "PlayerManager";
+        if(playerEx.equals("PlayerManager")){
+            PlayerManager playerManager = new PlayerManager(channels, this);
 
-// создаем новый объект Runnable
-        Runnable playerRunnable = new Runnable() {
-            @Override
-            public void run() {
-                // выполняем необходимые действия с ExoPlayer
-                float getVolume = player.getVolume();
-                Log.d(TAG, "Max video bitrate: " + getVolume);
+            player = playerManager.getPlayer();
+            player.addListener(listener);
+        } else if(playerEx.equals("PlayerInit")) {
+            player = InitPlayer.initPlayer(this, new SimpleExoPlayer.Builder(this).build(),
+                    channels, listener, false, false, false);
+        }
 
-                // постим задачу для выполнения через 1 секунду
-                playerHandler.postDelayed(this, 1000);
-            }
-        };
+        playerView.setPlayer(player);
+        player.prepare();
+        player.setRepeatMode(Player.REPEAT_MODE_ALL);/*навигация канал по кругу*/
+        player.setPlayWhenReady(true);
 
-// постим первую задачу для выполнения через 1 секунду
-        playerHandler.postDelayed(playerRunnable, 1000);
-111
-    }
+        /*Жесты */
+        GestureEventListener gestureEventListener = new GestureEventListener(this, player);
+        player.addListener( gestureEventListener);
+        playerView.setOnTouchListener(gestureEventListener);
 
 
- */
+        /*Пробуем переопределить кнопки*/
+
+        CustomForwardingPlayer forwardingPlayer = new CustomForwardingPlayer(player);/*Копия Player для переназначения кнопок*/
+        playerView.setPlayer(forwardingPlayer);
+        playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);/*Прогрес буфферизации*/
+        playerView.setShowFastForwardButton(false); /*скрываем кнопки перемотки*/
+        playerView.setShowRewindButton(false);
+
+        PlayerControlView playerControlView = new PlayerControlView(this);
+        playerControlView.setPlayer(forwardingPlayer);
+        playerControlView.setShowNextButton(false);
+
+
+
+        /*Сетка ListviewRecycle*/
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        // Если находимся в портретном режиме, то  заполняем список каналов ListviewRecycle
+        if (recyclerView != null) {
+            recyclerView.setLayoutManager(layoutManager);
+            // Обработка клика  на строке ListviewRecycle (переключаем канал при клике на строку)
+            //Log.d("onPositionDiscontinuity", Utils.getMediaInfoCodec(this, player.getCurrentMediaItem()).get().toString());
+            MyAdapter adapter = new MyAdapter(channels, (channel, position) -> {
+                player.seekTo(position, 0);
+                player.setPlayWhenReady(true);
+                //Log.d("onPositionDiscontinuity", Utils.getMediaInfoCodec(this, player.getCurrentMediaItem()).get().toString());
+
+            });
+            recyclerView.setAdapter(adapter);
+        }
 
     }
 
@@ -160,62 +158,8 @@ public class MainActivity extends AppCompatActivity {
         // Установить флаги, чтобы Activity оставалась в полноэкранном режиме
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-        // Установить размеры PlayerView на весь экран
-//        playerView.setLayoutParams(new RelativeLayout.LayoutParams(
-//                ViewGroup.LayoutParams.MATCH_PARENT,
-//                ViewGroup.LayoutParams.MATCH_PARENT));
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        player.stop();
-        player.release();
-    }
-
-    // Запоминаем состояние player
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        super.onSaveInstanceState(savedInstanceState);
-
-        // Сохраняем состояние ExoPlayer
-        if (player != null) {
-            savedInstanceState.putLong("position", player.getCurrentPosition());
-            savedInstanceState.putInt("windowIndex", player.getCurrentWindowIndex());
-        }
-
-        if(recyclerView != null){
-            // Сохраняем позицию прокрутки RecyclerView
-            LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-            recyclerViewScrollPosition = layoutManager.findFirstVisibleItemPosition();
-            savedInstanceState.putInt("recyclerViewScrollPosition", recyclerViewScrollPosition);
-        }
-
-    }
-
-    // Восстанавливаем состояние player
-    @Override
-    public void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-
-        // Восстанавливаем состояние ExoPlayer
-        if (savedInstanceState != null) {
-            long position = savedInstanceState.getLong("position");
-            int windowIndex = savedInstanceState.getInt("windowIndex");
-
-            if (player != null) {
-                player.seekTo(windowIndex, position);
-            }
-        }
-
-        // Восстанавливаем позицию прокрутки RecyclerView из сохраненного состояния
-        if(recyclerView != null) {
-            recyclerViewScrollPosition = savedInstanceState.getInt("recyclerViewScrollPosition");
-            recyclerView.scrollToPosition(recyclerViewScrollPosition);
-        }
-
-    }
 
     // Будет устанавливать full экран в зависимости от ориентации
     public void setFullScreen(boolean isFullScreen) {
@@ -230,20 +174,17 @@ public class MainActivity extends AppCompatActivity {
 
     /* В зависимости от ориентации прячем заголовок и разворачиваем на весь экран*/
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            setFullScreen(true);
-            getSupportActionBar().hide();
 
             Toast.makeText(this, "ORIENTATION_LANDSCAPE", Toast.LENGTH_SHORT).show();
             recyclerView.setVisibility(View.GONE); // Если ландшафтная ориентация то прячем  recyclerView (список каналов)
 
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
             playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
-            setFullScreen(false);
             recyclerView.setVisibility(View.VISIBLE); // Если портретная ориентация то показываем  recyclerView (список каналов)
         }
 
@@ -252,33 +193,55 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onPause() {
         super.onPause();
+
         if (player != null) {
-            //playbackPosition = player.getCurrentPosition();
-            //currentWindow = player.getCurrentWindowIndex();
             player.setPlayWhenReady(false);
         }
-        //recyclerView.setLayoutManager(null);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (player != null) {
-            //player.seekTo(currentWindow, playbackPosition);
-            // player.setPlayWhenReady(true);
-        }
+        Toast.makeText(this, "Сработал onResume", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        Toast.makeText(this, "Сработал onStart", Toast.LENGTH_SHORT).show();
+        if(null != player){
+
+            player.setPlayWhenReady(true);
+            player.seekTo(0);
+            //playerView.setUseController(false);
+        }
+
+
         mWakeLock.acquire();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        Toast.makeText(this, "Сработал onStop", Toast.LENGTH_SHORT).show();
         mWakeLock.release();
     }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Toast.makeText(this, "Сработал onDestroy", Toast.LENGTH_SHORT).show();
+
+        if(null != player){
+
+            player.stop();
+            player.release();
+        }
+
+
+    }
+
+
 }
 

@@ -6,10 +6,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
+import com.arthenica.ffmpegkit.FFmpegKit;
 import com.google.android.exoplayer2.Player;
 
 public class GestureEventListener extends GestureDetector.SimpleOnGestureListener 
-        implements Player.EventListener, GestureDetector.OnGestureListener, View.OnTouchListener {
+        implements Player.Listener, GestureDetector.OnGestureListener, View.OnTouchListener {
 
     private static final int SWIPE_THRESHOLD = 100;
     private static final int SWIPE_VELOCITY_THRESHOLD = 100;
@@ -83,6 +84,7 @@ public class GestureEventListener extends GestureDetector.SimpleOnGestureListene
     public boolean onSingleTapUp(MotionEvent motionEvent) {
         // Обработка одиночного касания экрана
         System.out.println("Произошло касание");
+        FFmpegKit.cancel();
         return true;
     }
 
@@ -103,6 +105,7 @@ public class GestureEventListener extends GestureDetector.SimpleOnGestureListene
         float diffX = motionEvent1.getX() - motionEvent.getX();
         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
             if (diffX > 0) {
+
                 player.previous();
                 //Toast.makeText(context, "Жест влево", Toast.LENGTH_SHORT).show();
             } else {
