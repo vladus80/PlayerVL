@@ -1,97 +1,183 @@
 package com.example.myapplication;
 
 import android.content.Context;
+import android.os.Build;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.ForeignKey;
+import androidx.room.Ignore;
+import androidx.room.Index;
+import androidx.room.PrimaryKey;
+
+import com.example.myapplication.playlist.PlaylistData;
 import com.google.android.exoplayer2.source.MediaSource;
 
-import net.bjoernpetersen.m3u.M3uParser;
 import net.bjoernpetersen.m3u.model.M3uEntry;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-import com.vladus.parcer.VLM3uEntity;
-import com.vladus.parcer.VlM3uParcer;
+import com.vladus.parser.VLM3uEntity;
+import com.vladus.parser.VlM3uParser;
 
 
+@Entity(
+        tableName = "channels",
+        foreignKeys = @ForeignKey(
+                entity = PlaylistData.class,
+                parentColumns = "id",
+                childColumns = "playlist_id",
+                onDelete = ForeignKey.CASCADE
+        ),
+        indices = @Index(value = {"playlist_id"})
+)
 public class Channel {
+    @PrimaryKey(autoGenerate = true)
+    @NonNull
+    private long id;
+    @ColumnInfo(name = "name")
     private String nameChannel;
+    @ColumnInfo(name = "group")
     private String groupChannel;
+    @ColumnInfo(name = "epg_id")
     private String epgId;
+    @ColumnInfo(name = "uri")
     private String urlChannel;
+    @ColumnInfo(name = "logo")
     private String urlLogo;
-    private M3uEntry m3uEntry;
-    private File filePlaylist;
-    private Context context;
-    private MediaSource mediaSource;
-    private List<Channel>channelList;
-    private VLM3uEntity vlm3uEntity;
+    private int like;
+    private long playlist_id;
+    private int visible;
 
-    public Channel(String nameChannel, String groupChannel, String epgId, String urlChannel, String urlLogo) {
+    @Ignore
+    private M3uEntry m3uEntry;
+    @Ignore
+    private File filePlaylist;
+    @Ignore
+    private Context context;
+    @Ignore
+    private MediaSource mediaSource;
+    @Ignore
+    private List<Channel>channelList;
+    @Ignore
+    private VLM3uEntity vlm3uEntity;
+    @Ignore
+    public final static int LIKE = 1;
+    @Ignore
+    public final static int DISLIKE = 0;
+    @Ignore
+    public final static int VISIBLE = 1;
+    @Ignore
+    public final static int INVISIBLE  = 0;
+
+    public Channel(long id, String nameChannel, String groupChannel,
+                        String epgId, String urlChannel, String urlLogo,
+                        int like, int visible, long playlist_id)
+    {
+        this.nameChannel = nameChannel;
+        this.groupChannel = groupChannel;
+        this.playlist_id = playlist_id;
+        this.epgId = epgId;
+        this.urlChannel = urlChannel;
+        this.urlLogo = urlLogo;
+        this.visible= visible;
+        this.like = like;
+        this.id = id;
+    }
+
+    @Ignore
+    public Channel(String nameChannel, String groupChannel, String epgId,
+                                        String urlChannel, String urlLogo) {
         this.nameChannel = nameChannel;
         this.groupChannel = groupChannel;
         this.epgId = epgId;
         this.urlChannel = urlChannel;
         this.urlLogo = urlLogo;
+        this.visible= visible;
     }
 
+    @Ignore
     public Channel(String nameChannel,  String urlChannel) {
         this.nameChannel = nameChannel;
         this.urlChannel = urlChannel;
     }
 
+    @Ignore
     public Channel(VLM3uEntity vlm3uEntity) throws MalformedURLException {
 
         this.vlm3uEntity = vlm3uEntity;
         this.urlLogo = vlm3uEntity.getLogoChannel();
         this.groupChannel = vlm3uEntity.getGroupChannel() ;
         this.epgId = vlm3uEntity.getEpgChannelId();
-        //this.urlChannel = new vlm3uEntity.getUriChannel();
+        this.urlChannel = vlm3uEntity.getUriChannel();
         this.nameChannel = vlm3uEntity.getNameChannel();
     }
 
-    public Channel(M3uEntry m3uEntry) {
-        this.m3uEntry = m3uEntry;
-        this.urlLogo = m3uEntry.getMetadata().getLogo();
-        this.groupChannel = m3uEntry.getMetadata().get("group-title");
-        this.epgId = m3uEntry.getMetadata().get("tvg-id");
-        this.urlChannel = String.valueOf(m3uEntry.getLocation().getUrl());
-        this.nameChannel = m3uEntry.getTitle();
+//    public Channel(M3uEntry m3uEntry) {
+//        this.m3uEntry = m3uEntry;
+//        this.urlLogo = m3uEntry.getMetadata().getLogo();
+//        this.groupChannel = m3uEntry.getMetadata().get("group-title");
+//        this.epgId = m3uEntry.getMetadata().get("tvg-id");
+//        this.urlChannel = String.valueOf(m3uEntry.getLocation().getUrl());
+//        this.nameChannel = m3uEntry.getTitle();
+//
+//    }
 
-    }
-
+//    public Channel(File filePlaylist) throws IOException {
+//
+//        this.filePlaylist = filePlaylist;
+//        this.channelList = new ArrayList<>();
+//        File file = new File(String.valueOf(filePlaylist));
+//
+//        List<M3uEntry> m3uEntries = null;
+//        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+//            m3uEntries = M3uParser.parse(file.toPath());
+//        }
+//
+//        for (M3uEntry entry :  m3uEntries) {
+//            channelList.add(new Channel(entry)) ;
+//        }
+//
+//    }
+    @Ignore
     public Channel(File filePlaylist) throws IOException {
 
         this.filePlaylist = filePlaylist;
         this.channelList = new ArrayList<>();
         File file = new File(String.valueOf(filePlaylist));
 
-        List<M3uEntry> m3uEntries = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            m3uEntries = M3uParser.parse(file.toPath());
+        List<VLM3uEntity> vlm3uEntities = null;
+        PlaylistData playlistEntity;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vlm3uEntities = VlM3uParser.parse(file.toPath().toString());
         }
-
-        for (M3uEntry entry :  m3uEntries) {
-            channelList.add(new Channel(entry)) ;
-        }
-
-    }
-
-
-    public Channel(String pathFile) throws MalformedURLException {
-
-        this.channelList = new ArrayList<>();
-        List<VLM3uEntity> vlm3uEntities;
-        vlm3uEntities = VlM3uParcer.parce(pathFile);
 
         for (VLM3uEntity entry :  vlm3uEntities) {
             channelList.add(new Channel(entry)) ;
         }
 
+    }
+
+    @Ignore
+    public Channel(String pathFile) throws MalformedURLException {
+
+        this.channelList = new ArrayList<>();
+        List<VLM3uEntity> vlm3uEntities;
+        vlm3uEntities = VlM3uParser.parse(pathFile);
+
+        for (VLM3uEntity entry :  vlm3uEntities) {
+            channelList.add(new Channel(entry)) ;
+
+        }
+        System.out.println(channelList);
     }
 
     public List<Channel> getChannelList() {
@@ -142,13 +228,54 @@ public class Channel {
         this.m3uEntry = m3uEntry;
     }
 
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public int getLike() {
+        return like;
+    }
+
+    public void setLike(int like) {
+        this.like = like;
+    }
+
+    public long getPlaylist_id() {
+        return playlist_id;
+    }
+
+    public void setPlaylist_id(long playlist_id) {
+        this.playlist_id = playlist_id;
+    }
+
+
+    public int getVisible() {
+        return visible;
+    }
+
+    public void setVisible(int visible) {
+        this.visible = visible;
+    }
+
+
     @Override
     public String toString() {
         return "Channel{" +
-                "nameChannel='" + nameChannel + '\'' +
+                "id=" + id +
+                ", nameChannel='" + nameChannel + '\'' +
                 ", groupChannel='" + groupChannel + '\'' +
                 ", epgId='" + epgId + '\'' +
-                ", logo='" + urlLogo + '\'' +
-                ", urlChannel=" + urlChannel + "}\r\n";
+                ", urlChannel='" + urlChannel + '\'' +
+                ", urlLogo='" + urlLogo + '\'' +
+                ", like=" + like +
+                ", playlist_id=" + playlist_id +
+                ", visible=" + visible +
+                '}';
     }
+
+
 }

@@ -1,6 +1,5 @@
 package com.example.myapplication;
 
-
 import android.annotation.SuppressLint;
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -9,14 +8,16 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.ForwardingPlayer;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
@@ -24,18 +25,8 @@ import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.ui.PlayerView;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-
-/*
-import wseemann.media.FFmpegMediaMetadataRetriever;
-import wseemann.media.FFmpegMediaMetadataRetriever;
-*/
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private SimpleExoPlayer player;
     private PowerManager.WakeLock mWakeLock; //Чтобы держать устройство включенным
+    private ItemTouchHelper itemTouchHelper; // перетаскивать каналы в recycleView
 
     @SuppressLint("DefaultLocale")
     @Override
@@ -59,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         mWakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK, "MyApp::MyWakelockTag");
 
+
+        /*Определяем слушатель player*/
         Player.Listener listener = new Player.Listener() {
             @Override
             public void onEvents(@NonNull Player player, Player.Events events) {
@@ -78,18 +72,11 @@ public class MainActivity extends AppCompatActivity {
 
         };
 
-
-        File file = Utils.getPlaylistFromRaw(this );
-        List<Channel> channelList = null;
-        try {
-            channelList = new Channel(file).getChannelList();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        // channelList = new Channel(file.getAbsoluteFile()).getChannelList();
+        List<Channel> channelList = SingletonListChannel.getInstance().getChannelList();
 
         String nameGroupFromIntent = getIntent().getStringExtra("name_group");
         List<Channel> channels = channelList.stream().filter(channel -> channel.getGroupChannel().equals(nameGroupFromIntent)).collect(Collectors.toList());
-        System.out.println(channelList);
 
         String playerEx = "PlayerManager";
         if(playerEx.equals("PlayerManager")){
@@ -101,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
             player = InitPlayer.initPlayer(this, new SimpleExoPlayer.Builder(this).build(),
                     channels, listener, false, false, false);
         }
+
 
         playerView.setPlayer(player);
         player.prepare();
@@ -126,7 +114,6 @@ public class MainActivity extends AppCompatActivity {
         playerControlView.setShowNextButton(false);
 
 
-
         /*Сетка ListviewRecycle*/
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         // Если находимся в портретном режиме, то  заполняем список каналов ListviewRecycle
@@ -140,7 +127,11 @@ public class MainActivity extends AppCompatActivity {
                 //Log.d("onPositionDiscontinuity", Utils.getMediaInfoCodec(this, player.getCurrentMediaItem()).get().toString());
 
             });
+
             recyclerView.setAdapter(adapter);
+            ItemTouchHelper.Callback callback = new ItemTouchHelperCallback(adapter);
+            itemTouchHelper = new ItemTouchHelper(callback);
+            itemTouchHelper.attachToRecyclerView(recyclerView);
         }
 
     }
@@ -202,13 +193,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
-        Toast.makeText(this, "Сработал onResume", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Сработал onResume", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        Toast.makeText(this, "Сработал onStart", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Сработал onStart", Toast.LENGTH_SHORT).show();
         if(null != player){
 
             player.setPlayWhenReady(true);
@@ -223,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        Toast.makeText(this, "Сработал onStop", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Сработал onStop", Toast.LENGTH_SHORT).show();
         mWakeLock.release();
     }
 
@@ -231,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Toast.makeText(this, "Сработал onDestroy", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Сработал onDestroy", Toast.LENGTH_SHORT).show();
 
         if(null != player){
 

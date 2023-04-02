@@ -12,12 +12,14 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.myapplication.playlist.PlaylistAdapterRecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
+public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> implements ItemTouchHelperAdapter {
     interface OnStateClickListener{
         void onStateClick(Channel channel, int position) throws ExecutionException, InterruptedException;
     }
@@ -46,7 +48,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
 
 
     @Override
-    public void onBindViewHolder(MyViewHolder holder, @SuppressLint("RecyclerView") int position) {
+    public void onBindViewHolder(MyAdapter.MyViewHolder holder, @SuppressLint("RecyclerView") int position) {
 
 
         // Установка имя канала
@@ -59,11 +61,11 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         //holder.imageViewDivider.setImageResource(R.drawable.list_item_selector);
 
 
-        if (selectedPosition == position) {
-            holder.itemView.setBackgroundResource(R.drawable.list_item_selector);
-        } else {
-            holder.itemView.setBackgroundResource(com.google.android.material.R.color.background_floating_material_dark);
-        }
+//        if (selectedPosition == position) {
+//            holder.itemView.setBackgroundResource(R.drawable.list_item_selector);
+//        } else {
+//            holder.itemView.setBackgroundResource(com.google.android.material.R.color.background_floating_material_dark);
+//        }
 
         // Слушатель на click, возвращает объект и номер позиции
         Channel channel = mDataset.get(position);
@@ -93,6 +95,14 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             selectedPosition = position;
             notifyDataSetChanged();
         }
+    }
+
+
+    /** метод onItemMove() служит для перемещения строк в cyrcleView*/
+    @Override
+    public void onItemMove(int fromPosition, int toPosition) {
+        Collections.swap(mDataset, fromPosition, toPosition);
+        notifyItemMoved(fromPosition, toPosition);
     }
 
     public Integer getSelectedPosition() {

@@ -1,42 +1,20 @@
 package com.example.myapplication;
 
 
-import android.app.Application;
 import android.content.Context;
-import android.view.View;
-import android.view.WindowManager;
-import android.widget.Toast;
-
-import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.MetadataRetriever;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.source.TrackGroup;
-import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 public class Utils {
 
-    private static  Context context;
+    //private  Context context;
     public static File getPlaylistFromRaw(Context mContext) {
 
-        int resId = mContext.getResources().getIdentifier("playlist2", "raw", mContext.getPackageName()); // получение идентификатора ресурса
-        InputStream inputStream = mContext.getResources().openRawResource(resId); // создание InputStream
-        File file = new File(mContext.getFilesDir(), "playlist2.m3u"); // создание объекта File для сохранения файла
+        InputStream inputStream = mContext.getResources().openRawResource(R.raw.playlistizi); // создание InputStream
+        File file = new File(mContext.getFilesDir(), "playlist_file.m3u8"); // создание объекта File для сохранения файла
         try {
             FileOutputStream outputStream = new FileOutputStream(file); // создание FileOutputStream
             byte[] buffer = new byte[1024];
@@ -50,21 +28,13 @@ public class Utils {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        ;
         return file;
-
     }
 
-
-    public static void Toast(Context context, String message){
-
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
-
-    }
 
 
     /*Получаем информацию о медиаданных, метданных*/
-    public static ListenableFuture<List<String>> getMediaInfoCodec(Context context, MediaItem mediaItem) {
+   /* public static ListenableFuture<List<String>> getMediaInfoCodec(Context context, MediaItem mediaItem) {
 
         Executor executor = Executors.newFixedThreadPool(4);
         SettableFuture<List<String>> future = SettableFuture.create();
@@ -96,7 +66,7 @@ public class Utils {
             }
         }, executor);
         return future;
-    }
+    }*/
 }
 
 
