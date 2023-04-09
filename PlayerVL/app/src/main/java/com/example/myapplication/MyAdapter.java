@@ -104,7 +104,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> impl
             notifyItemChanged(position);
         });
 
-        /*Проверка из гитхаба*/
+        /*Проверка из с компа*/
 
         holder.btnStarLike.setOnClickListener(new View.OnClickListener() {
             @Override
