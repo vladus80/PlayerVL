@@ -1,14 +1,18 @@
 package com.example.myapplication;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,6 +22,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.myapplication.playlist.PlaylistActivity;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
@@ -32,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     private PlayerView playerView;
     private RecyclerView recyclerView;
+    private ImageButton btnStarLike;
     private SimpleExoPlayer player;
     private PowerManager.WakeLock mWakeLock; //Чтобы держать устройство включенным
     private ItemTouchHelper itemTouchHelper; // перетаскивать каналы в recycleView
@@ -46,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
 
         playerView = findViewById(R.id.player_view);
         recyclerView = findViewById(R.id.recycler_view);
+        View itemRecycler = LayoutInflater.from(getApplicationContext()).inflate(R.layout.item_recycleview_channel, null);
+        btnStarLike = itemRecycler.findViewById(R.id.btn_star_like);
 
         // Инициализируем менеджер чтобы экран не гас
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
@@ -134,7 +142,9 @@ public class MainActivity extends AppCompatActivity {
             itemTouchHelper.attachToRecyclerView(recyclerView);
         }
 
+
     }
+
 
     private void setFullScreen() {
         // Скрыть все элементы управления системы
@@ -150,7 +160,6 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
     }
-
 
     // Будет устанавливать full экран в зависимости от ориентации
     public void setFullScreen(boolean isFullScreen) {
@@ -231,6 +240,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        startActivity(new Intent(MainActivity.this, GroupChannelActivity.class));
     }
 
 

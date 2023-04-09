@@ -2,12 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layout_item_playlist"
     android:layout_width="match_parent"
     android:layout_height="50dp"
     android:layout_margin="5dp"
     android:background="#7B718688"
-    android:divider="@android:drawable/divider_horizontal_textfield"
-    android:dividerHeight="1dp"
     android:orientation="horizontal">
 
 
@@ -30,16 +29,14 @@
         android:gravity="center|center_vertical"
         android:padding="5dp" />
 
-    <ImageButton
-        android:id="@+id/settingPlaylistImageBut"
-        android:layout_width="48dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:background="#00FEFCFC"
-        android:contentDescription="Что-то"
-        android:padding="5dp"
-        android:scaleType="fitXY"
-        app:srcCompat="@drawable/icon_settings" />
+    <Switch
+        android:id="@+id/switchActivePlaylist"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_weight="0"
+        android:text="@string/switchActivePlaylist"
+        android:visibility="gone"
+        tools:ignore="UseSwitchCompatOrMaterialXml" />
 
 
 </LinearLayout>

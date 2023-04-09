@@ -17,13 +17,17 @@ public class PlaylistData implements Serializable {
     String name;
     String provider;
     String path;
+    int active;
 
 
-    public PlaylistData(long id, String name, String provider, String path) {
+
+
+    public PlaylistData(long id, String name, String provider, String path, int active) {
         this.id = id;
         this.name = name;
         this.provider = provider;
         this.path = path;
+        this.active = active;
     }
 
     public long getId() {
@@ -58,6 +62,15 @@ public class PlaylistData implements Serializable {
         this.path = path;
     }
 
+    public int getActive() {
+        return active;
+    }
+
+    public void setActive(int active) {
+        this.active = active;
+    }
+
+
     @Override
     public String toString() {
         return "Playlist{" +
@@ -65,19 +78,22 @@ public class PlaylistData implements Serializable {
                 ", name='" + name + '\'' +
                 ", provider='" + provider + '\'' +
                 ", path='" + path + '\'' +
+                ", active=" + active +
                 '}';
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof PlaylistData)) return false;
         PlaylistData that = (PlaylistData) o;
-        return id == that.id && name.equals(that.name) && provider.equals(that.provider);
+        return getId() == that.getId() && getActive() == that.getActive() && getName().equals(that.getName()) && Objects.equals(getProvider(), that.getProvider()) && getPath().equals(that.getPath());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, provider);
+        return Objects.hash(getId(), getName(), getProvider(), getPath(), getActive());
     }
+
+
 }

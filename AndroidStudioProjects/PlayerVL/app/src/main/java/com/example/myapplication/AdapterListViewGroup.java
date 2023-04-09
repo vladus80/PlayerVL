@@ -1,18 +1,12 @@
 package com.example.myapplication;
 
-import static androidx.core.content.ContextCompat.startActivity;
-
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class AdapterListViewGroup extends BaseAdapter {
@@ -45,7 +39,7 @@ public class AdapterListViewGroup extends BaseAdapter {
         View view = convertView;
         if (view == null) {
             LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            view = inflater.inflate(R.layout.item_list_view_group, null);
+            view = inflater.inflate(R.layout.item_listview_group, null);
         }
 
         TextView name = view.findViewById(R.id.item_name_group);

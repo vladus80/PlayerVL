@@ -10,6 +10,17 @@
     tools:context=".playlist.PlaylistAddActivity">
 
 
+    <Switch
+        android:id="@+id/switchActivatePlaylist"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_margin="5dp"
+        android:checked="true"
+        android:padding="5dp"
+        android:text="@string/switchActivePlaylist"
+        android:visibility="invisible"
+        android:textAlignment="textEnd" />
+
     <EditText
         android:id="@+id/inputPlaylistName"
         android:layout_width="match_parent"

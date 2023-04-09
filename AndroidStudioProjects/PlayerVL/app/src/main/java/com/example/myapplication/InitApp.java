@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -25,37 +26,50 @@ public class InitApp extends AppCompatActivity {
 
         db = AppDateBase.getInstance(this);
 
-        if(getPlaylistsInDB() == true){
+        db.playlistDAO().getAllPlaylistsAll().observe(this, new Observer<List<PlaylistData>>() {
+            @Override
+            public void onChanged(List<PlaylistData> playlistData) {
+                boolean res;
+                if(playlistData.size() > 0 ){
+                    vlStartActivity(GroupChannelActivity.class);
+                }else {
+                    vlStartActivity(PlaylistActivity.class);
+                }
+            }
+        });
 
-            vlStartActivity(GroupChannelActivity.class);
 
-        }else {
-            vlStartActivity(PlaylistActivity.class);
-
-        }
-        Log.d("CountPlaylistDB", String.valueOf(getPlaylistsInDB()));
+//        if(getPlaylistsInDB() == true){
+//
+//            vlStartActivity(GroupChannelActivity.class);
+//
+//        }else {
+//            vlStartActivity(PlaylistActivity.class);
+//
+//        }
+//
     }
 
 
-
-
-    private boolean getPlaylistsInDB(){
-
-        boolean res;
-        List<PlaylistData> playlistData = db.PlaylistDAO().getAllPlaylists();
-        Log.d("CountPlaylistDB", String.valueOf(playlistData.size()));
-        if(playlistData.size() > 0 ){
-            res = true;
-        }else {
-            res = false;
-        }
-        return res;
-    }
+//    private boolean getPlaylistsInDB(){
+//
+//        boolean res;
+//
+//        //List<PlaylistData> playlistData = db.playlistDAO().getAllPlaylists();
+//        //Log.d("CountPlaylistDB", String.valueOf(playlistData.size()));
+////        if(playlistData.size() > 0 ){
+////            res = true;
+////        }else {
+////            res = false;
+////        }
+////        return res;
+//    }
 
     private void vlStartActivity(Class<? extends Activity> activityClass){
 
         Intent intent = new Intent(getApplicationContext(),activityClass);
         startActivity(intent);
+        finish();
     }
 
 

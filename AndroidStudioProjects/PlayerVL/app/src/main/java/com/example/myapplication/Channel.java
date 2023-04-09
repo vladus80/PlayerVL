@@ -69,7 +69,7 @@ public class Channel {
     @Ignore
     private VLM3uEntity vlm3uEntity;
     @Ignore
-    public final static int LIKE = 1;
+    public final static int LIKE = 0;
     @Ignore
     public final static int DISLIKE = 0;
     @Ignore

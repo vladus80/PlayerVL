@@ -18,13 +18,13 @@ public abstract class AppDateBase extends RoomDatabase {
     public static synchronized AppDateBase getInstance(Context context) {
         if (instance == null) {
             instance = Room.databaseBuilder(context.getApplicationContext(),
-                            AppDateBase.class, "app_database")
-                            .allowMainThreadQueries()
+                            AppDateBase.class, "iptv.db")
+                            //.allowMainThreadQueries()
                             .build();
         }
         return instance;
     }
     public abstract ChannelEntityDAO channelEntityDAO();
-    public abstract PlaylistDAO PlaylistDAO();
+    public abstract PlaylistDAO playlistDAO();
 
 }

@@ -2,7 +2,7 @@
     <string name="app_name">Плеер IpTv</string>
     <string name="count_channels">Количество каналов: %d</string>
     <string name="addPlaylis">Добавить плэйлист</string>
-    <string name="descriptionPlaylists">Выберите необходимый плэйлист или добавьте новый</string>
+    <string name="descriptionPlaylists">Обновить плэйлист или добавьте новый</string>
     <string name="settingsPlaylist">Настройка плэйлиста</string>
     <string name="namePlaylistLabel">Введите назавание Плэйлиста</string>
     <string name="hintInputPlaylist">Введите название листа</string>
@@ -12,4 +12,8 @@
     <string name="backChannels">Вернуться к списку каналов</string>
     <string name="menu_item_playlists">Плэйлисты</string>
     <string name="deletePlaylist">Удалить</string>
+    <string name="switchActivePlaylist">Активен</string>
+    <string name="updatePlaylist">Обновить Плэйлист</string>
+    <string name="add_like">Добавить в избранное</string>
+
 </resources>
