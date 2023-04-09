@@ -105,6 +105,8 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> impl
         });
 
 
+        /* Проверка*/
+
         holder.btnStarLike.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
