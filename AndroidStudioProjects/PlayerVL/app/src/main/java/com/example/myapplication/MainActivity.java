@@ -3,37 +3,41 @@ package com.example.myapplication;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.myapplication.playlist.PlaylistActivity;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.ui.PlayerView;
 
-import java.io.File;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-public class MainActivity extends AppCompatActivity {
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.functions.Consumer;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
+public class MainActivity extends AppCompatActivity implements OnClickListenerBtnLike, OnClickListenerItem {
 
     private PlayerView playerView;
     private RecyclerView recyclerView;
@@ -41,6 +45,11 @@ public class MainActivity extends AppCompatActivity {
     private SimpleExoPlayer player;
     private PowerManager.WakeLock mWakeLock; //Чтобы держать устройство включенным
     private ItemTouchHelper itemTouchHelper; // перетаскивать каналы в recycleView
+    private AppDateBase db = AppDateBase.getInstance(this);
+    private List<Channel> channels;
+    private Handler handler = new Handler(Looper.getMainLooper());
+    private String nameGroupFromIntent;
+    private ChannelAdapterRecyclerView channelAdapterRecyclerView;
 
     @SuppressLint("DefaultLocale")
     @Override
@@ -59,6 +68,28 @@ public class MainActivity extends AppCompatActivity {
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         mWakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK, "MyApp::MyWakelockTag");
 
+
+        db.channelEntityDAO().getAllChannels().observe(this, new Observer<List<Channel>>() {
+            @Override
+            public void onChanged(List<Channel> channelList) {
+
+//                new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        for (Channel channel: channelList ) {
+//                            if (db.channelEntityDAO().isActive(channel.getId())==1) {
+//                                db.channelEntityDAO().updateLike(channel.getId(), 0 );
+//
+//                            }else{
+//                                db.channelEntityDAO().updateLike(channel.getId(), 1 );
+//
+//                            }
+//                        }
+//                    }
+//                }).start();
+
+            }
+        });
 
         /*Определяем слушатель player*/
         Player.Listener listener = new Player.Listener() {
@@ -80,23 +111,90 @@ public class MainActivity extends AppCompatActivity {
 
         };
 
-        // channelList = new Channel(file.getAbsoluteFile()).getChannelList();
         List<Channel> channelList = SingletonListChannel.getInstance().getChannelList();
+        nameGroupFromIntent = getIntent().getStringExtra("name_group");
 
-        String nameGroupFromIntent = getIntent().getStringExtra("name_group");
-        List<Channel> channels = channelList.stream().filter(channel -> channel.getGroupChannel().equals(nameGroupFromIntent)).collect(Collectors.toList());
+        if(nameGroupFromIntent.equals("Избранное")){
 
-        String playerEx = "PlayerManager";
-        if(playerEx.equals("PlayerManager")){
-            PlayerManager playerManager = new PlayerManager(channels, this);
+            Observable.fromCallable(new Callable<List<Channel>>() {
+                @Override
+                public List<Channel> call() throws Exception {
 
-            player = playerManager.getPlayer();
-            player.addListener(listener);
-        } else if(playerEx.equals("PlayerInit")) {
-            player = InitPlayer.initPlayer(this, new SimpleExoPlayer.Builder(this).build(),
-                    channels, listener, false, false, false);
+                    List<Channel> result = db.channelEntityDAO().getLikes();
+                    channels = db.channelEntityDAO().getLikes();
+                    return result;
+                }
+            }).subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnNext(new Consumer<List<Channel>>() {
+                        @Override
+                        public void accept(List<Channel> channelList) throws Throwable {
+                            channelAdapterRecyclerView = new ChannelAdapterRecyclerView(channelList,
+                                    MainActivity.this::onClickBtnLike, MainActivity.this::onClickItem);
+                            String playerEx = "PlayerManager";
+                            if(playerEx.equals("PlayerManager")){
+                                PlayerManager playerManager = new PlayerManager(channelList, MainActivity.this);
+
+                                player = playerManager.getPlayer();
+                                player.addListener(listener);
+                                initPlayerPlay(player);
+                            } else if(playerEx.equals("PlayerInit")) {
+                                player = InitPlayer.initPlayer(MainActivity.this, new SimpleExoPlayer.Builder(MainActivity.this).build(),
+                                        channels, listener, false, false, false);
+                                initPlayerPlay(player);
+                            }
+                        }
+                    })
+                    .subscribe();
+
+        }else {
+            channels = channelList.stream().filter(channel -> channel.getGroupChannel()
+                            .equals(nameGroupFromIntent))
+                            .collect(Collectors.toList());
+            channelAdapterRecyclerView = new ChannelAdapterRecyclerView(channels, this, this);
+            String playerEx = "PlayerManager";
+            if(playerEx.equals("PlayerManager")){
+                PlayerManager playerManager = new PlayerManager(channels, this);
+
+                player = playerManager.getPlayer();
+                player.addListener(listener);
+                initPlayerPlay(player);
+            } else if(playerEx.equals("PlayerInit")) {
+                player = InitPlayer.initPlayer(this, new SimpleExoPlayer.Builder(this).build(),
+                        channels, listener, false, false, false);
+               // player = playerManager.getPlayer();
+                player.addListener(listener);
+                initPlayerPlay(player);
+            }
+
         }
 
+        // Если находимся в портретном режиме, то  заполняем список каналов ListviewRecycle
+//        if (recyclerView != null) {
+//            recyclerView.setLayoutManager(layoutManager);
+//            // Обработка клика  на строке ListviewRecycle (переключаем канал при клике на строку)
+//            Log.d("onPositionDiscontinuity", Utils.getMediaInfoCodec(this, player.getCurrentMediaItem()).get().toString());
+//            MyAdapter adapter = new MyAdapter(channels, (channel, position) -> {
+//                player.seekTo(position, 0);
+//                player.setPlayWhenReady(true);
+//                //Log.d("onPositionDiscontinuity", Utils.getMediaInfoCodec(this, player.getCurrentMediaItem()).get().toString());
+//
+//            });
+//
+//            ChannelAdapterRecyclerView channelAdapterRecyclerView = new ChannelAdapterRecyclerView(channels, this, this);
+//
+//            recyclerView.setAdapter(adapter);
+//            recyclerView.setAdapter(channelAdapterRecyclerView);
+//
+//            ItemTouchHelper.Callback callback = new ItemTouchHelperCallback(channelAdapterRecyclerView);
+//           // ItemTouchHelper.Callback callback = new ItemTouchHelperCallback(adapter);
+//            itemTouchHelper = new ItemTouchHelper(callback);
+//            itemTouchHelper.attachToRecyclerView(recyclerView);
+//        }
+
+    }
+
+    private void initPlayerPlay(SimpleExoPlayer player){
 
         playerView.setPlayer(player);
         player.prepare();
@@ -120,56 +218,56 @@ public class MainActivity extends AppCompatActivity {
         PlayerControlView playerControlView = new PlayerControlView(this);
         playerControlView.setPlayer(forwardingPlayer);
         playerControlView.setShowNextButton(false);
-
-
-        /*Сетка ListviewRecycle*/
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        // Если находимся в портретном режиме, то  заполняем список каналов ListviewRecycle
-        if (recyclerView != null) {
+        if(recyclerView != null){
             recyclerView.setLayoutManager(layoutManager);
-            // Обработка клика  на строке ListviewRecycle (переключаем канал при клике на строку)
-            //Log.d("onPositionDiscontinuity", Utils.getMediaInfoCodec(this, player.getCurrentMediaItem()).get().toString());
-            MyAdapter adapter = new MyAdapter(channels, (channel, position) -> {
-                player.seekTo(position, 0);
-                player.setPlayWhenReady(true);
-                //Log.d("onPositionDiscontinuity", Utils.getMediaInfoCodec(this, player.getCurrentMediaItem()).get().toString());
-
-            });
-
-            recyclerView.setAdapter(adapter);
-            ItemTouchHelper.Callback callback = new ItemTouchHelperCallback(adapter);
-            itemTouchHelper = new ItemTouchHelper(callback);
-            itemTouchHelper.attachToRecyclerView(recyclerView);
+            recyclerView.setAdapter(channelAdapterRecyclerView);
         }
+    }
 
+    @SuppressLint("CheckResult")
+    @Override
+    public void onClickBtnLike(int position, ImageButton imageButton) {
+        //Toast.makeText(this, "position in Click: " + position, Toast.LENGTH_SHORT).show();
+
+        Observable.fromCallable(new Callable<Boolean>() {
+                    @Override
+                    public Boolean call() throws Exception {
+                        Boolean result = false;
+                        Channel channel = channels.get(position);
+                        //Log.d("LickeResul", String.valueOf(db.channelEntityDAO().isActive(channels.get(position).getId())));
+                        if (db.channelEntityDAO().isActive(channel.getId())==1) {
+                            db.channelEntityDAO().updateLike(channel.getId(), 0 );
+
+                            result = true;
+                        }else{
+                            db.channelEntityDAO().updateLike(channel.getId(), 1 );
+                            result = false;
+                        }
+                        return result;
+                    }
+                }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean result) throws Throwable {
+
+                        if (result == true){
+                            imageButton.setImageDrawable(getResources().getDrawable(R.drawable.star_empt));
+                        }else {
+                            imageButton.setImageDrawable(getResources().getDrawable(R.drawable.star_full));
+                        }
+
+                    }
+
+                });
 
     }
 
-
-    private void setFullScreen() {
-        // Скрыть все элементы управления системы
-        getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-
-        // Установить флаги, чтобы Activity оставалась в полноэкранном режиме
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
-    }
-
-    // Будет устанавливать full экран в зависимости от ориентации
-    public void setFullScreen(boolean isFullScreen) {
-        if (isFullScreen) {
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            getSupportActionBar().hide();
-        } else {
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-            getSupportActionBar().show();
-        }
+    @Override
+    public void onClickItem(int position) {
+        player.seekTo(position, 0);
+        player.setPlayWhenReady(true);
     }
 
     /* В зависимости от ориентации прячем заголовок и разворачиваем на весь экран*/
@@ -247,7 +345,6 @@ public class MainActivity extends AppCompatActivity {
         super.onBackPressed();
         startActivity(new Intent(MainActivity.this, GroupChannelActivity.class));
     }
-
 
 }
 

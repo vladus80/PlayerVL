@@ -27,11 +27,18 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.example.myapplication.playlist.PlaylistData;
 import com.example.myapplication.playlist.PlaylistActivity;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.Consumer;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 
 public class GroupChannelActivity extends AppCompatActivity {
@@ -131,10 +138,27 @@ public class GroupChannelActivity extends AppCompatActivity {
             Long value = entry.getValue();
             mList.add(new ModelItemListViewGroup(key, Long.valueOf(value)));
         }
-        /*Устанавливаем структуру в адаптер*/
-        AdapterListViewGroup mAdapter = new AdapterListViewGroup(this, mList);
-        mListView.setAdapter(mAdapter); /*Устанавливаем адаптер в ListView*/
 
+
+        AdapterListViewGroup mAdapter = new AdapterListViewGroup(this, mList);
+
+        Observable.fromCallable(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                Integer res = db.channelEntityDAO().getLikes().size();
+                System.out.println(res);
+                return res;
+            }
+        }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<Integer>() {
+                    @Override
+                    public void accept(Integer res) throws Throwable {
+                        mList.add(0,new ModelItemListViewGroup("Избранное", Long.valueOf(res)));
+                        /*Устанавливаем структуру в адаптер*/
+                        mListView.setAdapter(mAdapter); /*Устанавливаем адаптер в ListView*/
+                    }
+                });
     }
 
     @Override
@@ -143,6 +167,4 @@ public class GroupChannelActivity extends AppCompatActivity {
         //finish();
 
     }
-
-
 }

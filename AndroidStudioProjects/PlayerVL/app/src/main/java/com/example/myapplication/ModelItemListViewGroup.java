@@ -5,9 +5,9 @@ class ModelItemListViewGroup {
         private String mName;
         private Long mCountChannels;
 
-public ModelItemListViewGroup(String name, Long description) {
+public ModelItemListViewGroup(String name, Long mCountChannels) {
         this.mName = name;
-        this.mCountChannels = description;
+        this.mCountChannels = mCountChannels;
         }
 
 public String getName() {
@@ -23,7 +23,7 @@ public Long getDescription() {
         }
 
 public void setDescription(Long description) {
-        mCountChannels = description;
+        mCountChannels = mCountChannels;
         }
 }
 

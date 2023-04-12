@@ -28,6 +28,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.myapplication.AppDateBase;
 import com.example.myapplication.R;
@@ -58,6 +59,7 @@ public class PlaylistAddActivity extends AppCompatActivity {
     private PlaylistData playlistData;
     private Intent intent;
     private Boolean result;
+
 
     /*Запрашиваем права*/
     @RequiresApi(api = Build.VERSION_CODES.R)
@@ -90,6 +92,7 @@ public class PlaylistAddActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playlist_add);
+        PlaylistAddViewModel viewModel = new ViewModelProvider(this).get(PlaylistAddViewModel.class);
 
         inputPlaylistName = findViewById(R.id.inputPlaylistName);
         labelPlaylistPathFile = findViewById(R.id.labelPlaylistPathFile);
@@ -100,6 +103,7 @@ public class PlaylistAddActivity extends AppCompatActivity {
 
         db = AppDateBase.getInstance(getApplication());
         context = getApplicationContext();
+
 
         // Запрашиваем  права на доступ к файлам
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -124,7 +128,7 @@ public class PlaylistAddActivity extends AppCompatActivity {
 
         /* В зависимости от того если прилетает  интент, то значит обновляем плэйлист,
         * а если нет, то значит сохраняем плэйлист */
-        intent = getIntent();
+
         if (intent != null) {
             playlistData = (PlaylistData) intent.getSerializableExtra("playlist");
             if (playlistData != null) {
@@ -207,7 +211,7 @@ public class PlaylistAddActivity extends AppCompatActivity {
                         .subscribe(new Consumer<PlaylistData>() {
                             @Override
                             public void accept(PlaylistData playlistData) throws Throwable {
-                                startActivity(new Intent(getApplicationContext(), PlaylistActivity.class));
+                                //startActivity(new Intent(getApplicationContext(), PlaylistActivity.class));
                                 Toast.makeText(getApplicationContext(), "Плэйлист " + playlistData.getName() + " удален", Toast.LENGTH_SHORT).show();
                                 finish();
                             }

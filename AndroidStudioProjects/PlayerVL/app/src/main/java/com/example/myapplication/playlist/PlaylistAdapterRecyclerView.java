@@ -78,19 +78,11 @@ public class PlaylistAdapterRecyclerView extends RecyclerView.Adapter<PlaylistAd
             }
         }).start();
 
-
-
-
         // Слушатель на click, возвращает объект и номер позиции
         PlaylistData playlistData = playlistDataList.get(position);
         holder.itemView.setOnClickListener(v -> {
 
             senData(holder.itemView.getContext(), PlaylistAddActivity.class, "playlist", playlistData);
-            //notifyDataSetChanged();
-//            int previousSelectedPosition = selectedPosition;
-//            selectedPosition = holder.getAdapterPosition();
-//            notifyItemChanged(previousSelectedPosition);
-//            notifyItemChanged(selectedPosition);
 
         });
 
