@@ -6,6 +6,7 @@ import androidx.lifecycle.Observer;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.util.Log;
 
 import com.example.myapplication.playlist.PlaylistActivity;
@@ -17,6 +18,7 @@ public class InitApp extends AppCompatActivity {
 
 
     private AppDateBase db;
+    private PowerManager.WakeLock mWakeLock; //Чтобы держать устройство включенным
 
 
     @Override
@@ -25,7 +27,6 @@ public class InitApp extends AppCompatActivity {
         setContentView(R.layout.activity_init_app);
 
         db = AppDateBase.getInstance(this);
-
         db.playlistDAO().getAllPlaylistsAll().observe(this, new Observer<List<PlaylistData>>() {
             @Override
             public void onChanged(List<PlaylistData> playlistData) {

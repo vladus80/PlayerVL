@@ -76,10 +76,14 @@ public class Channel {
     public final static int VISIBLE = 1;
     @Ignore
     public final static int INVISIBLE  = 0;
+    @Ignore
+    private String playlistName;
+
+
 
     public Channel(long id, String nameChannel, String groupChannel,
-                        String epgId, String urlChannel, String urlLogo,
-                        int like, int visible, long playlist_id)
+                   String epgId, String urlChannel, String urlLogo,
+                   int like, int visible, long playlist_id)
     {
         this.nameChannel = nameChannel;
         this.groupChannel = groupChannel;
@@ -261,6 +265,14 @@ public class Channel {
         this.visible = visible;
     }
 
+
+    public String getPlaylistName() {
+        return playlistName;
+    }
+
+    public void setPlaylistName(String playlistName) {
+        this.playlistName = playlistName;
+    }
 
     @Override
     public String toString() {

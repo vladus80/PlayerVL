@@ -32,7 +32,6 @@ public class PlayerManager {
     private final Context  context;
 
 
-
     public PlayerManager(List<Channel> channelList, Context context) {
         // Ссылка на список каналов
         this.channelList = channelList;
@@ -85,6 +84,8 @@ public class PlayerManager {
         }
         return hlsMediaSourceList;
     }
+
+
 
 
 

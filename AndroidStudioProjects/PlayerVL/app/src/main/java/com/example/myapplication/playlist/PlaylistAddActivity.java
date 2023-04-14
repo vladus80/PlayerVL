@@ -103,6 +103,7 @@ public class PlaylistAddActivity extends AppCompatActivity {
 
         db = AppDateBase.getInstance(getApplication());
         context = getApplicationContext();
+        intent = getIntent();
 
 
         // Запрашиваем  права на доступ к файлам

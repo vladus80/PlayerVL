@@ -49,8 +49,7 @@ public class PlaylistActivity extends AppCompatActivity {
             @Override
             public void onChanged(List<Channel> channelList) {
                 recyclerView.setAdapter(playlistAdapterRecyclerView);
-            }
-        });
+            }});
 
         /*Обновляем каналы  при изменении в базе даннных*/
         viewModel.getPlaylists().observe(this, new Observer<List<PlaylistData>>() {

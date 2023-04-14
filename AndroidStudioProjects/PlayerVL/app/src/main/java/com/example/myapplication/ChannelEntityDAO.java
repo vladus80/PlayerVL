@@ -12,7 +12,7 @@ import java.util.List;
 @Dao
 public interface ChannelEntityDAO {
     /**
-     * Возвращает все channels
+     * Возвращает все каналы
      */
     @Query("SELECT * FROM channels")
     List<Channel> getAll();
@@ -67,6 +67,13 @@ public interface ChannelEntityDAO {
             "WHERE channels.visible = :active")
     List<Channel> getChannelsByActivePlaylist(int active);
 
+    @Query("SELECT channels.* FROM channels LEFT JOIN  playlist " +
+            "ON channels.playlist_id=playlist.id " +
+            "WHERE channels.visible = :active")
+    LiveData<List<Channel>> getChannelsByActivePlaylistLD(int active);
+
+
+
     /**
      * Возвращает сколько каналов содержит playlist по playlist_id
      */
@@ -87,4 +94,8 @@ public interface ChannelEntityDAO {
 
     @Query("SELECT * FROM channels WHERE `like` = 1 AND `visible` = 1")
     List<Channel> getLikes();
+
+    /*Возвращает активные каналы в избранном*/
+    @Query("SELECT * FROM channels WHERE `like` = 1 AND `visible` = 1")
+    LiveData<List<Channel>> getLikesLD();
 }

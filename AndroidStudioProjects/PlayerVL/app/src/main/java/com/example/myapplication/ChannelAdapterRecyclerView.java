@@ -1,5 +1,8 @@
 package com.example.myapplication;
 
+import android.graphics.Color;
+import android.provider.CalendarContract;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,17 +12,20 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.util.Collections;
 import java.util.List;
 
-public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdapterRecyclerView.ItemViewHolder> {
+public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdapterRecyclerView.ItemViewHolder> implements ItemTouchHelperAdapter {
 
     private List<Channel> channels;
     private static OnClickListenerBtnLike onClickListenerBtnLike;
     private static OnClickListenerItem onClickListenerItem;
+    private int selectedPosition = RecyclerView.NO_POSITION;
 
     public ChannelAdapterRecyclerView(List<Channel> channels,  OnClickListenerBtnLike onClickListenerBtnLike,
                                                                OnClickListenerItem onClickListenerItem ){
@@ -28,11 +34,6 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
         ChannelAdapterRecyclerView.onClickListenerBtnLike = onClickListenerBtnLike;
         ChannelAdapterRecyclerView.onClickListenerItem = onClickListenerItem;
 
-
-    }
-
-    public void setChannels(List<Channel> channels) {
-        this.channels = channels;
     }
 
     @NonNull
@@ -45,6 +46,8 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
         return new ItemViewHolder(holderView);
     }
 
+
+
     @Override
     public void onBindViewHolder(@NonNull ItemViewHolder holder, int position) {
 
@@ -55,19 +58,39 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
 
         //String nameGroup = channels.get(position).getPlaylist_id();
 
-        holder.mTextView.setText(channels.get(position).getNameChannel());
-        holder.mTextViewGroup.setText(channels.get(position).getGroupChannel());
+        String name = channels.get(position).getNameChannel();
+        String group = channels.get(position).getGroupChannel();
+        String playlistName = channels.get(position).getPlaylistName();
+        holder.mTextView.setText(name);
+        holder.mTextViewGroup.setText(group + "\n" + playlistName);
 
 
+        /* Устанваливаем звездочку при клике на звездочку*/
         int like = channels.get(position).getLike();
         if(like == 0){
-            holder.btnStarLike.setImageDrawable(holder.itemView.getContext().getResources().getDrawable(R.drawable.star_empt));
+            holder.btnStarLike.setImageDrawable(ResourcesCompat
+                    .getDrawable(holder.itemView.getResources(),
+                            R.drawable.star_empt, null));
         }else {
-            holder.btnStarLike.setImageDrawable(holder.itemView.getContext().getResources().getDrawable(R.drawable.star_full));
+            holder.btnStarLike.setImageDrawable(ResourcesCompat
+                    .getDrawable(holder.itemView.getResources(),
+                            R.drawable.star_full, null));
         }
 
-        holder.btnStarLike.setTag(position);
 
+        /* Выделяем строку при нажатии */
+        if (selectedPosition == position) {
+            holder.itemView.setBackgroundColor(Color.DKGRAY);
+        } else {
+            holder.itemView.setBackgroundColor(Color.rgb(53, 54,58));
+        }
+
+    }
+
+    @Override
+    public void onItemMove(int fromPosition, int toPosition) {
+        Collections.swap(channels, fromPosition, toPosition);
+        notifyItemMoved(fromPosition, toPosition);
     }
 
 
@@ -101,10 +124,11 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
             btnStarLike.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    int position = (int) view.getTag();
-                    onClickListenerBtnLike.onClickBtnLike(position, btnStarLike);
-                   // notifyItemChanged(position);
+                    //int position = (int) view.getTag();
+                    int position = getAdapterPosition();
+                    onClickListenerBtnLike.onClickBtnLike(channels.get(position));
 
+                    Log.d("ChanelAdapter", channels.get(position).toString());
                     int like = channels.get(position).getLike();
                     if (like == 0) {
                         channels.get(position).setLike(1);
@@ -118,12 +142,22 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    int position = getAdapterPosition();
-                    onClickListenerItem.onClickItem(position);
+
+                    int previousSelectedPosition = selectedPosition;
+                    selectedPosition = getAdapterPosition();
+                    notifyItemChanged(previousSelectedPosition);
+                    notifyItemChanged(selectedPosition);
+
+                    if (onClickListenerItem != null) {
+                        onClickListenerItem.onClickItem(selectedPosition);
+                    }
+
                 }
             });
+
         }
     }
+
 }
 
 
