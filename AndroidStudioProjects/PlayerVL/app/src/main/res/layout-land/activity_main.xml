@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:focusable="true"
+    android:focusableInTouchMode="false"
+    android:nextFocusRight="@+id/spinner_group"
+    android:orientation="horizontal"
     tools:context=".MainActivity">
 
 
@@ -11,14 +16,38 @@
         android:id="@+id/player_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0"
+        android:focusable="auto"
         android:visibility="visible"
+        android:nextFocusRight="@+id/spinner_group"
         app:resize_mode="fit">
 
     </com.google.android.exoplayer2.ui.PlayerView>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <LinearLayout
+        android:id="@+id/layout_panel_channel"
+        android:layout_width="500dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:orientation="vertical"
+        android:visibility="invisible">
+
+        <Spinner
+            android:id="@+id/spinner_group"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:nextFocusForward="@+id/recycler_view"
+            android:spinnerMode="dropdown"
+            android:visibility="visible" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView_land"
+            android:layout_width="500dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="#FFFFFF"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:visibility="visible" />
+    </LinearLayout>
+
+</FrameLayout>

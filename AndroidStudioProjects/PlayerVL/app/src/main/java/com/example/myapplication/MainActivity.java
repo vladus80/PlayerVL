@@ -1,22 +1,26 @@
 package com.example.myapplication;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.PowerManager;
-import android.util.Log;
-import android.view.LayoutInflater;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.ImageButton;
-import android.widget.Toast;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
+import android.view.animation.TranslateAnimation;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -24,39 +28,31 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.MediaMetadata;
-import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.Tracks;
-import com.google.android.exoplayer2.metadata.Metadata;
-import com.google.android.exoplayer2.source.hls.HlsManifest;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-import com.google.android.exoplayer2.ui.PlayerControlView;
 import com.google.android.exoplayer2.ui.PlayerView;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
-
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.functions.Consumer;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity implements OnClickListenerBtnLike, OnClickListenerItem {
 
+    private static final long LONG_PRESS_TIMEOUT = ViewConfiguration.getLongPressTimeout();
     private PlayerView playerView;
     private RecyclerView recyclerView;
-
     private SimpleExoPlayer player;
     private PowerManager.WakeLock mWakeLock; //Чтобы держать устройство включенным
     private ItemTouchHelper itemTouchHelper; // перетаскивать каналы в recycleView
-
     private ChannelAdapterRecyclerView channelAdapterRecyclerView;
     private MainActivityViewModel viewModel;
+
+    private LinearLayout layoutPanelChannel;
+    private Spinner spinnerGroup;
+    private String nameGroup;
+    private CustomForwardingPlayer forwardingPlayer;
+    private PlayerManager playerManager = null;
+    private int stateDownloadGroups = 0;
+    private ArrayAdapter<String> adapter;
+
 
     @SuppressLint("DefaultLocale")
     @Override
@@ -69,127 +65,189 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
         // Инициализируем менеджер чтобы экран не гас
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         mWakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK, "MyApp::MyWakelockTag");
-
         playerView = findViewById(R.id.player_view);
-        recyclerView = findViewById(R.id.recycler_view);
+        layoutPanelChannel = findViewById(R.id.layout_panel_channel);
         viewModel = new ViewModelProvider(this).get(MainActivityViewModel.class);
-        String nameGroup = getIntent().getStringExtra("name_group");
 
-        viewModel.getChannelsLD(nameGroup).observe(this, new Observer<List<Channel>>() {
+        int orientation = getResources().getConfiguration().orientation;
+
+        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            recyclerView = findViewById(R.id.recycler_view);
+            spinnerGroup = findViewById(R.id.spinner_group_port);
+
+        } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            recyclerView = findViewById(R.id.recyclerView_land);
+            spinnerGroup = findViewById(R.id.spinner_group);
+            int screenWidth = getResources().getDisplayMetrics().widthPixels;
+            layoutPanelChannel.layout(screenWidth + recyclerView.getWidth(), 0,
+                    screenWidth + recyclerView.getWidth() * 2, recyclerView.getHeight());
+
+        }
+
+        // Заполняем спиннер
+        viewModel.getGroupsLD().observe(this, new Observer<List<String>>() {
+            @Override
+            public void onChanged(List<String> groups) {
+
+                if (stateDownloadGroups == 0) {
+                    groups.add(0, "Избранное");
+                    adapter = new ArrayAdapter<>(
+                            MainActivity.this, R.layout.simple_spinner_item,
+                            groups);
+                    spinnerGroup.setAdapter(adapter);
+                    stateDownloadGroups++;
+
+                    if (getIntent() != null) {
+                        nameGroup = getIntent().getStringExtra("name_group");
+                        viewModel.setGroupName(nameGroup);
+                        init(nameGroup);
+                        int spinnerPosition = adapter.getPosition(nameGroup); // получаем позицию элемента в адаптере
+                        spinnerGroup.setSelection(spinnerPosition); // устанавливаем выбранным элемент с найденной позицией
+
+                    }
+                }
+            }
+        });
+
+
+        spinnerGroup.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long id) {
+
+                nameGroup = adapterView.getItemAtPosition(pos).toString();
+                viewModel.setGroupName(nameGroup);
+                init(nameGroup);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                recyclerView.requestFocus(); // Если ничего не выбрано то фокус на список  каналов
+            }
+        });
+
+
+        spinnerGroup.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean b) {
+                if (!b) {
+                    recyclerView.requestFocus();
+                }
+            }
+        });
+    }
+
+
+    public void init(String grName) {
+
+        viewModel.getChannelsLD(grName).observe(MainActivity.this, new Observer<List<Channel>>() {
             @Override
             public void onChanged(List<Channel> channels) {
 
-                PlayerManager playerManager = new PlayerManager(channels, MainActivity.this);
-                player = playerManager.getPlayer();
-                initPlayerPlay(player, channels);
-
-                channelAdapterRecyclerView = new ChannelAdapterRecyclerView(channels,
-                        MainActivity.this,
-                        MainActivity.this);
+                //Log.d("nameGrpFromMainActView ", ""+channels);
+                //viewModel.setGroupName("Избранное");
                 LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
-                if(recyclerView != null){
+                if (playerManager == null) {
+                    playerManager = new PlayerManager(channels, MainActivity.this);
+                    player = playerManager.getPlayer();
+                    playerView.setPlayer(player);
                     recyclerView.setLayoutManager(layoutManager);
-                    recyclerView.setAdapter(channelAdapterRecyclerView);
+                    channelAdapterRecyclerView = new ChannelAdapterRecyclerView(channels,
+                            MainActivity.this,
+                            MainActivity.this);
+                    //Toast.makeText(MainActivity.this, "Создаем новый PM", Toast.LENGTH_SHORT).show();
+                } else {
+                    playerManager.setChannelList(channels);
+                    player.setMediaSources(playerManager.getMediaSourceList());
+
+                    //player.addMediaSources(playerManager.getMediaSourceList());
+                    player.setPlayWhenReady(false);
+                    channelAdapterRecyclerView.setChannels(channels);
+                    //Toast.makeText(MainActivity.this, "Используем старый PM", Toast.LENGTH_SHORT).show();
                 }
 
-                /* Перемещение item в списке*/
-                ItemTouchHelper.Callback callback = new ItemTouchHelperCallback(new ItemTouchHelperAdapter() {
-
-                    @Override
-                    public void onItemMove(int fromPosition, int toPosition) {
-                        // Обменять элементы в списке
-                        Collections.swap(channels, fromPosition, toPosition);
-                        // Уведомить адаптер об изменениях
-                        channelAdapterRecyclerView.notifyItemMoved(fromPosition, toPosition);
-                    }
-                });
-                itemTouchHelper = new ItemTouchHelper(callback);
-                itemTouchHelper.attachToRecyclerView(recyclerView);
+                recyclerView.setAdapter(channelAdapterRecyclerView);
+                playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
+                player.prepare();
+                player.setPlayWhenReady(true);
+                recyclerView.requestFocus();
+                playerView.setUseController(false);
 
             }
         });
 
     }
 
-    private void initPlayerPlay(SimpleExoPlayer player, List<Channel> channelList){
 
+    @Override
+    public void onClickBtnLike(Channel channel) {
 
-
-
-        /*Определяем слушатель player*/
-        Player.Listener listener = new Player.Listener() {
-            @Override
-            public void onEvents(@NonNull Player player, Player.Events events) {
-                Player.Listener.super.onEvents(player, events);
-
-            }
-            @Override
-            public void onPositionDiscontinuity(@NonNull Player.PositionInfo oldPosition, @NonNull Player.PositionInfo
-                    newPosition, @Player.DiscontinuityReason int reason) {
-                Player.Listener.super.onPositionDiscontinuity(reason);
-                if (reason == Player.DISCONTINUITY_REASON_SEEK) {
-
-                }
-            }
-
-            @Override
-            public void onTimelineChanged(Timeline timeline, int reason) {
-                Player.Listener.super.onTimelineChanged(timeline, reason);
-
-                Timeline.Period period = timeline.getPeriod(0, new Timeline.Period());
-
-                Object manifest = player.getCurrentManifest();
-                if (manifest != null) {
-                    HlsManifest hlsManifest = (HlsManifest) manifest;
-                    // Do something with the manifest.
-                    Log.d("getDuration", "getDuration: " +
-                            hlsManifest.multivariantPlaylist.mediaPlaylistUrls);
-                }
-
-            }
-
-        };
-
-        player.addListener(listener);
-
-        playerView.setPlayer(player);
-        player.prepare();
-        player.setRepeatMode(Player.REPEAT_MODE_ALL);/*навигация канал по кругу*/
-        player.setPlayWhenReady(true);
-
-        /*Жесты */
-        GestureEventListener gestureEventListener = new GestureEventListener(this, player);
-        player.addListener( gestureEventListener);
-        playerView.setOnTouchListener(gestureEventListener);
-
-
-        /*Пробуем переопределить кнопки*/
-
-        CustomForwardingPlayer forwardingPlayer = new CustomForwardingPlayer(player);/*Копия Player для переназначения кнопок*/
-        playerView.setPlayer(forwardingPlayer);
-        playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);/*Прогрес буфферизации*/
-        playerView.setShowFastForwardButton(false); /*скрываем кнопки перемотки*/
-        playerView.setShowRewindButton(false);
-
-
-        PlayerControlView playerControlView = new PlayerControlView(this);
-        playerControlView.setPlayer(forwardingPlayer);
-        playerControlView.setShowNextButton(false);
-
-//        Log.d("getDuration", "getDuration: " + player.getDuration());
-//        Log.d("getContentDuration", "getDuration: " + player.getContentDuration());
-//        Log.d("getTotalBufferedDuration", "getDuration: " + player.getTotalBufferedDuration());
+        viewModel.setLike(channel);
 
     }
 
 
     @Override
-    public void onClickBtnLike(Channel channel) {viewModel.setLike(channel);}
-
-    @Override
     public void onClickItem(int position) {
         player.seekTo(position, 0);
+        player.prepare();
         player.setPlayWhenReady(true);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_UP:
+
+                return true;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                //Toast.makeText(this, ""+getCurrentFocus().toString(), Toast.LENGTH_SHORT).show();
+                if (getCurrentFocus() == spinnerGroup) {
+                    playerView.requestFocus();
+                }
+                return true;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+
+
+                if (layoutPanelChannel.getVisibility() == View.INVISIBLE) {
+
+                    layoutPanelChannel.startAnimation(translateAnimation(1000, 0, 500));
+                    layoutPanelChannel.setVisibility(View.VISIBLE);
+                    playerView.setAnimation(scaleAnimation(1f, 0.54f, 1, 0.54f, 500));
+                    recyclerView.requestFocus();
+
+                } else {
+                    layoutPanelChannel.startAnimation(translateAnimation(0, 1000, 500));
+                    playerView.setAnimation(scaleAnimation(0.54f, 1f, 0.54f, 1f, 500));
+                    layoutPanelChannel.setVisibility(View.INVISIBLE);
+                    recyclerView.requestFocus();
+
+                }
+
+                return true;
+            default:
+                return super.onKeyDown(keyCode, event);
+        }
+    }
+
+    private Animation translateAnimation(int fromDelta, int toDelta, int duration) {
+
+        Animation animation = new TranslateAnimation(fromDelta, toDelta, 0, 0);
+        animation.setDuration(duration);
+        animation.setFillAfter(false);
+        return animation;
+    }
+
+    private ScaleAnimation scaleAnimation(float fromX, float toX, float fromY, float toY, int duration) {
+
+        ScaleAnimation animation = new ScaleAnimation(
+                fromX, toX, // Начальный и конечный масштаб по оси X
+                fromY, toY, // Начальный и конечный масштаб по оси Y
+                Animation.RELATIVE_TO_PARENT, 0f, // Ось X относительно центра виджета
+                Animation.RELATIVE_TO_PARENT, 0f // Ось Y относительно центра виджета
+        );
+        animation.setDuration(duration);
+        animation.setFillAfter(true);
+        return animation;
     }
 
     /* В зависимости от ориентации прячем заголовок и разворачиваем на весь экран*/
@@ -199,13 +257,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
             getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            spinnerGroup.setVisibility(View.GONE);
 
-            Toast.makeText(this, "ORIENTATION_LANDSCAPE", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "ORIENTATION_LANDSCAPE", Toast.LENGTH_SHORT).show();
             recyclerView.setVisibility(View.GONE); // Если ландшафтная ориентация то прячем  recyclerView (список каналов)
 
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
             playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
             recyclerView.setVisibility(View.VISIBLE); // Если портретная ориентация то показываем  recyclerView (список каналов)
+            spinnerGroup.setVisibility(View.VISIBLE);
         }
 
     }
@@ -228,7 +288,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
     protected void onStart() {
         super.onStart();
         //Toast.makeText(this, "Сработал onStart", Toast.LENGTH_SHORT).show();
-        if(null != player){
+        if (null != player) {
 
             player.setPlayWhenReady(true);
             player.seekTo(0);
@@ -252,7 +312,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
         super.onDestroy();
         //Toast.makeText(this, "Сработал onDestroy", Toast.LENGTH_SHORT).show();
 
-        if(null != player){
+        if (null != player) {
 
             player.stop();
             player.release();
@@ -264,7 +324,23 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        startActivity(new Intent(MainActivity.this, GroupChannelActivity.class));
+        //startActivity(new Intent(MainActivity.this, GroupChannelActivity.class));
+
+
+
+//        String deviceType = "Unknown";
+//        if (Build.MODEL.contains("phone")) {
+//            super.onBackPressed();
+//            deviceType = "Phone";
+//        } else if (Build.MODEL.contains("tablet")) {
+//
+//            deviceType = "Tablet";
+//        } else if (Build.MODEL.contains("tv")) {
+//            deviceType = "TV";
+//            spinnerGroup.requestFocus();
+//            spinnerGroup.performClick();
+//        }
+
     }
 
 }

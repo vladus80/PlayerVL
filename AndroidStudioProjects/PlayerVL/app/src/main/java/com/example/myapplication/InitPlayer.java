@@ -23,6 +23,8 @@ import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.MediaSourceFactory;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
+import com.google.android.exoplayer2.source.hls.DefaultHlsExtractorFactory;
+import com.google.android.exoplayer2.source.hls.HlsExtractorFactory;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -54,7 +56,7 @@ public class InitPlayer {
         renderersFactory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
 
         LoadControl loadControl = new DefaultLoadControl.Builder()
-                .setBufferDurationsMs(5000, 5000, 2000, 5000)
+                .setBufferDurationsMs(50000, 50000, 2500, 5000)
                 .setTargetBufferBytes(C.LENGTH_UNSET)
                 .setPrioritizeTimeOverSizeThresholds(false)
                 .build();
@@ -113,13 +115,19 @@ public class InitPlayer {
         }*/
 
 
-        ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory()
-                .setTsExtractorFlags(FLAG_ALLOW_NON_IDR_KEYFRAMES
-                                | FLAG_DETECT_ACCESS_UNITS
-                                | FLAG_IGNORE_SPLICE_INFO_STREAM
-                                | FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS);
-       MediaSourceFactory mediaSourceFactory = new ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory)
-                .setContinueLoadingCheckIntervalBytes(ProgressiveMediaSource.DEFAULT_LOADING_CHECK_INTERVAL_BYTES / 2);
+//        ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory()
+//                .setTsExtractorFlags(FLAG_ALLOW_NON_IDR_KEYFRAMES
+//                                | FLAG_DETECT_ACCESS_UNITS
+//                                | FLAG_IGNORE_SPLICE_INFO_STREAM
+//                                | FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS);
+//       MediaSourceFactory mediaSourceFactory = new ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory)
+//                .setContinueLoadingCheckIntervalBytes(ProgressiveMediaSource.DEFAULT_LOADING_CHECK_INTERVAL_BYTES / 2);
+
+
+        HlsExtractorFactory hlsFactory = new DefaultHlsExtractorFactory();
+        MediaSourceFactory mediaSourceFactory = new HlsMediaSource.Factory(dataSourceFactory)
+                .setAllowChunklessPreparation(true)
+                .setExtractorFactory(hlsFactory);
 
         player = new SimpleExoPlayer.Builder(context, renderersFactory)
                 .setMediaSourceFactory(mediaSourceFactory)
@@ -128,13 +136,16 @@ public class InitPlayer {
                 .setUseLazyPreparation(true)
                 .build();
 
+
+
         if (null != listener) player.addListener(listener);
         player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT);
         if (silent) player.setVolume(0);
 
         List<MediaSource> urlChannel = getMediaSourceList(context, vidUri);
-        player.setMediaSources(urlChannel);
 
+
+        player.setMediaSources(urlChannel);
 
         Toast.makeText(context, "Запущен player Init", Toast.LENGTH_SHORT).show();
         return player;

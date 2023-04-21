@@ -9,6 +9,8 @@ import androidx.room.Query;
 
 import java.util.List;
 
+import io.reactivex.rxjava3.core.Completable;
+
 @Dao
 public interface ChannelEntityDAO {
     /**
@@ -86,16 +88,30 @@ public interface ChannelEntityDAO {
     @Query("SELECT * FROM channels")
     LiveData<List<Channel>> getAllChannels();
 
+    /** Возвращает избранный канал, используется для проверки избранный канал или нет*/
     @Query("SELECT `like` FROM channels WHERE id = :id")
     int isActive(long id);
 
+    /**
+     * Обновляет каналы, меняет Like
+     *
+     */
     @Query("UPDATE channels SET `like` = :like WHERE id = :id")
-    int updateLike(long id, int like);
+    void updateLike(long id, int like);
 
+    /** Возвращает все каналы ативные и с лайком*/
     @Query("SELECT * FROM channels WHERE `like` = 1 AND `visible` = 1")
     List<Channel> getLikes();
 
-    /*Возвращает активные каналы в избранном*/
-    @Query("SELECT * FROM channels WHERE `like` = 1 AND `visible` = 1")
-    LiveData<List<Channel>> getLikesLD();
+    /**Возвращает активные каналы видимые каналы по имени группы*/
+    @Query("SELECT * FROM channels WHERE `visible` = 1 AND `group` = :group")
+    List<Channel> getActiveChannelsByGroup(String group);
+
+    /** Возвращает названия групп*/
+    @Query("SELECT DISTINCT `group` from channels")
+    LiveData<List<String>> getGroups();
+
+    /** Возвращает названия групп из активных каналов*/
+    @Query("SELECT DISTINCT `group` from channels WHERE visible = 1")
+    LiveData<List<String>> getGroupsActive();
 }

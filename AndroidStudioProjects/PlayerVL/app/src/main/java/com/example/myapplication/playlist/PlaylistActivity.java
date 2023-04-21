@@ -80,6 +80,7 @@ public class PlaylistActivity extends AppCompatActivity {
             }
         });
 
+
     }
 
     @Override

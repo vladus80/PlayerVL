@@ -17,54 +17,27 @@ import java.util.List;
 public class InitApp extends AppCompatActivity {
 
 
-    private AppDateBase db;
-    private PowerManager.WakeLock mWakeLock; //Чтобы держать устройство включенным
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_init_app);
+        vlStartActivity(GroupChannelActivity.class);
 
-        db = AppDateBase.getInstance(this);
-        db.playlistDAO().getAllPlaylistsAll().observe(this, new Observer<List<PlaylistData>>() {
-            @Override
-            public void onChanged(List<PlaylistData> playlistData) {
-                boolean res;
-                if(playlistData.size() > 0 ){
-                    vlStartActivity(GroupChannelActivity.class);
-                }else {
-                    vlStartActivity(PlaylistActivity.class);
-                }
-            }
-        });
+//        db = AppDateBase.getInstance(this);
+//        db.playlistDAO().getAllPlaylistsAll().observe(this, new Observer<List<PlaylistData>>() {
+//            @Override
+//            public void onChanged(List<PlaylistData> playlistData) {
+//                boolean res;
+//                if(playlistData.size() > 0 ){
+//                    vlStartActivity(GroupChannelActivity.class);
+//                }else {
+//                    vlStartActivity(PlaylistActivity.class);
+//                }
+//            }
+//        });
 
-
-//        if(getPlaylistsInDB() == true){
-//
-//            vlStartActivity(GroupChannelActivity.class);
-//
-//        }else {
-//            vlStartActivity(PlaylistActivity.class);
-//
-//        }
-//
     }
-
-
-//    private boolean getPlaylistsInDB(){
-//
-//        boolean res;
-//
-//        //List<PlaylistData> playlistData = db.playlistDAO().getAllPlaylists();
-//        //Log.d("CountPlaylistDB", String.valueOf(playlistData.size()));
-////        if(playlistData.size() > 0 ){
-////            res = true;
-////        }else {
-////            res = false;
-////        }
-////        return res;
-//    }
 
     private void vlStartActivity(Class<? extends Activity> activityClass){
 

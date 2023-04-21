@@ -5,7 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@android:color/background_dark"
     tools:context=".MainActivity" >
+
+
+    <Spinner
+        android:id="@+id/spinner_group_port"
+        android:layout_width="300dp"
+        android:layout_height="50dp" />
 
     <com.google.android.exoplayer2.ui.PlayerView
         android:id="@+id/player_view"
@@ -20,8 +27,7 @@
         android:layout_marginBottom="20dp"
         android:layout_weight="0.2"
         tools:listitem="@layout/item_recycleview_channel"
-
-        android:background="#A77B7373"
+        android:background="@android:color/black"
         android:showDividers="middle" />
 
 

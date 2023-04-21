@@ -96,10 +96,14 @@ public class RealPathUtil {
             else if (isDownloadsDocument(uri)) {
 
                 final String id = DocumentsContract.getDocumentId(uri);
-                final Uri contentUri = ContentUris.withAppendedId(
-                        Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
+                System.out.println("DocumentsContract.getDocumentId(uri) " + id);
+                System.out.println("Uri.parse " + Uri.parse("content://downloads/public_downloads"));
+                //final Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.parseLong(id));
 
+                final Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.parseLong(id));
                 return getDataColumn(context, contentUri, null, null);
+
+                //return getDataColumn(context, Uri.parse(id.split(":")[1]), null, null);
             }
             // MediaProvider
             else if (isMediaDocument(uri)) {

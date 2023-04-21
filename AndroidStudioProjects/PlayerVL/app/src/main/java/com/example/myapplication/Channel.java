@@ -52,8 +52,11 @@ public class Channel {
     private String urlChannel;
     @ColumnInfo(name = "logo")
     private String urlLogo;
+    @ColumnInfo(name = "like")
     private int like;
+    @ColumnInfo(name = "playlist_id")
     private long playlist_id;
+    @ColumnInfo(name = "visible")
     private int visible;
 
     @Ignore
