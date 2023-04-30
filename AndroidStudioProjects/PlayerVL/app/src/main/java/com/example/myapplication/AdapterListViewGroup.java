@@ -49,17 +49,6 @@ public class AdapterListViewGroup extends BaseAdapter {
         name.setText(item.getName());
         description.setText(String.valueOf(item.getDescription()));
 
-        // установить слушатель на элемент списка
-        /*view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // обработка клика на элементе списка
-                Toast.makeText(mContext, "Клик на элементе " + name.getText(), Toast.LENGTH_SHORT).show();
-                //Intent intent = new Intent(v.getContext(), MainActivity.class);
-               // v.getContext().startActivity(intent);
-
-            }
-        });*/
 
         return  view;
     }

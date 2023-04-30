@@ -17,7 +17,7 @@ import io.reactivex.rxjava3.core.Completable;
 @Dao
 public interface PlaylistDAO {
 
-    @Query("SELECT * FROM playlist WHERE `id` = :id")
+    @Query("SELECT * FROM playlist WHERE `playlist_id` = :id")
     PlaylistData getById(long id);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -39,11 +39,11 @@ public interface PlaylistDAO {
     List<Channel> getChannelsForPlaylist(long playlistId);
 
     /** Устанавливает статус активности плэйлиста в поле active */
-    @Query("UPDATE playlist SET active = :active_state WHERE id = :id")
+    @Query("UPDATE playlist SET active = :active_state WHERE playlist_id = :id")
     void setActive(long id, int active_state);
 
     /** Подсчитывает колво плэйлистов с указанным именем*/
-    @Query("SELECT COUNT(*) FROM playlist WHERE name = :name ")
+    @Query("SELECT COUNT(*) FROM playlist WHERE playlist_name = :name ")
     int getCountPlaylistByName(String name);
 
 

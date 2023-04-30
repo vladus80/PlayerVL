@@ -40,11 +40,6 @@ public class GroupChannelViewModel extends AndroidViewModel {
 
     }
 
-//    /* Будем слушать изменения на колво избранных каналов*/
-//    public LiveData<Integer> getCountChannelsInFavoritLD() {
-//        return countChannelsInFavoritLD;
-//    }
-
 
     /* Будем слушать изменения на колво избранных каналов*/
     public Integer getCountChannelsInFavorit() {

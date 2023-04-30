@@ -2,10 +2,9 @@ package com.example.myapplication;
 
 import android.annotation.SuppressLint;
 import android.content.res.Configuration;
-import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -16,7 +15,6 @@ import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 
@@ -24,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -33,6 +32,7 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.PlayerView;
 
 import java.util.List;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity implements OnClickListenerBtnLike, OnClickListenerItem {
 
@@ -51,7 +51,9 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
     private CustomForwardingPlayer forwardingPlayer;
     private PlayerManager playerManager = null;
     private int stateDownloadGroups = 0;
-    private ArrayAdapter<String> adapter;
+    private ArrayAdapter<String> adapterSpinner;
+    private int positionItem = 0;
+    private int countLayout = 0;
 
 
     @SuppressLint("DefaultLocale")
@@ -84,39 +86,63 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
 
         }
 
+        recyclerView.setItemAnimator(null); // отключить анимацию при обновлении item
+        recyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+
+        // Если приходит с активити групп каналов то устанавливаем имя группы в LiveData
+        if (getIntent() != null) {
+            nameGroup = getIntent().getStringExtra("name_group");
+
+        }
+
+
         // Заполняем спиннер
         viewModel.getGroupsLD().observe(this, new Observer<List<String>>() {
             @Override
             public void onChanged(List<String> groups) {
 
+
                 if (stateDownloadGroups == 0) {
                     groups.add(0, "Избранное");
-                    adapter = new ArrayAdapter<>(
+                    adapterSpinner = new ArrayAdapter<>(
                             MainActivity.this, R.layout.simple_spinner_item,
                             groups);
-                    spinnerGroup.setAdapter(adapter);
+                    spinnerGroup.setAdapter(adapterSpinner);
                     stateDownloadGroups++;
+                    int spinnerPosition = adapterSpinner.getPosition(nameGroup); // получаем позицию элемента в адаптере
+                    spinnerGroup.setSelection(spinnerPosition); // устанавливаем выбранным элемент с найденной позицией
 
                     if (getIntent() != null) {
                         nameGroup = getIntent().getStringExtra("name_group");
-                        viewModel.setGroupName(nameGroup);
-                        init(nameGroup);
-                        int spinnerPosition = adapter.getPosition(nameGroup); // получаем позицию элемента в адаптере
-                        spinnerGroup.setSelection(spinnerPosition); // устанавливаем выбранным элемент с найденной позицией
+                        Log.d("nameGroupMainActivity-106", nameGroup);
+                        //viewModel.setGroupName(nameGroup);
 
                     }
                 }
+
             }
         });
 
 
+        // Подписываемся на изменение имени группы в LiveData (Основная работа здесь)
+        viewModel.getChannelsLD().observe(this, new Observer<List<Channel>>() {
+            @Override
+            public void onChanged(List<Channel> channelList) {
+
+                runPlayer(channelList); // Инициализируем плеер и заполняем данными при зменеии группы
+            }
+        });
+
+
+        // При выборе значения в спинере устанавливаем новое значение имени группы в LiveData
         spinnerGroup.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long id) {
 
                 nameGroup = adapterView.getItemAtPosition(pos).toString();
                 viewModel.setGroupName(nameGroup);
-                init(nameGroup);
+                Log.d("CountCallInit1", "Count: " + countLayout);
+
             }
 
             @Override
@@ -124,7 +150,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
                 recyclerView.requestFocus(); // Если ничего не выбрано то фокус на список  каналов
             }
         });
-
 
         spinnerGroup.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
@@ -136,61 +161,61 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
         });
     }
 
+    private void runPlayer(List<Channel> channels) {
 
-    public void init(String grName) {
+        countLayout++;
 
-        viewModel.getChannelsLD(grName).observe(MainActivity.this, new Observer<List<Channel>>() {
-            @Override
-            public void onChanged(List<Channel> channels) {
+        if (playerManager == null) {
+            //Log.d("CountCallInit1","Count: " + countLayout);
+            LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
+            playerManager = new PlayerManager(channels, MainActivity.this);
+            player = playerManager.getPlayer();
+            playerView.setPlayer(player);
+            recyclerView.setLayoutManager(layoutManager);
+            channelAdapterRecyclerView = new ChannelAdapterRecyclerView(channels,
+                    MainActivity.this,
+                    MainActivity.this);
+        } else {
+            //Log.d("CountCallInit2","Count: " + countLayout);
+            channelAdapterRecyclerView.setChannels(channels);
+            player.setMediaItems(playerManager.getMediaItems(channels));
 
-                //Log.d("nameGrpFromMainActView ", ""+channels);
-                //viewModel.setGroupName("Избранное");
-                LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
-                if (playerManager == null) {
-                    playerManager = new PlayerManager(channels, MainActivity.this);
-                    player = playerManager.getPlayer();
-                    playerView.setPlayer(player);
-                    recyclerView.setLayoutManager(layoutManager);
-                    channelAdapterRecyclerView = new ChannelAdapterRecyclerView(channels,
-                            MainActivity.this,
-                            MainActivity.this);
-                    //Toast.makeText(MainActivity.this, "Создаем новый PM", Toast.LENGTH_SHORT).show();
-                } else {
-                    playerManager.setChannelList(channels);
-                    player.setMediaSources(playerManager.getMediaSourceList());
-
-                    //player.addMediaSources(playerManager.getMediaSourceList());
-                    player.setPlayWhenReady(false);
-                    channelAdapterRecyclerView.setChannels(channels);
-                    //Toast.makeText(MainActivity.this, "Используем старый PM", Toast.LENGTH_SHORT).show();
-                }
-
-                recyclerView.setAdapter(channelAdapterRecyclerView);
-                playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
-                player.prepare();
-                player.setPlayWhenReady(true);
-                recyclerView.requestFocus();
-                playerView.setUseController(false);
-
-            }
-        });
+        }
+        recyclerView.setAdapter(channelAdapterRecyclerView);
+        playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS);
+        player.prepare();
+        player.setPlayWhenReady(true);
+        recyclerView.requestFocus();
+        playerView.setUseController(false);
 
     }
-
 
     @Override
     public void onClickBtnLike(Channel channel) {
-
         viewModel.setLike(channel);
-
     }
-
 
     @Override
     public void onClickItem(int position) {
         player.seekTo(position, 0);
         player.prepare();
         player.setPlayWhenReady(true);
+
+        Channel channel = (Channel) Objects.requireNonNull(player.getCurrentMediaItem().localConfiguration).tag;
+        Log.d("getCurrentMediaItem", channel.toString());
+
+    }
+
+    @Override
+    public void onClickItem(Channel channel) {
+        viewModel.setActivated(channel);
+
+    }
+
+    @Override
+    public int getPosition(int position) {
+        positionItem = position;
+        return positionItem;
     }
 
     @Override
@@ -207,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
                 return true;
             case KeyEvent.KEYCODE_DPAD_LEFT:
 
-
+                Log.d("ItemPositin", "" + positionItem);
                 if (layoutPanelChannel.getVisibility() == View.INVISIBLE) {
 
                     layoutPanelChannel.startAnimation(translateAnimation(1000, 0, 500));
@@ -215,15 +240,24 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
                     playerView.setAnimation(scaleAnimation(1f, 0.54f, 1, 0.54f, 500));
                     recyclerView.requestFocus();
 
+                    //recyclerView.addItemDecoration();
+
+                    //recyclerView.scrollToPosition(positionItem);
+
                 } else {
+                    recyclerView.scrollToPosition(positionItem);
                     layoutPanelChannel.startAnimation(translateAnimation(0, 1000, 500));
                     playerView.setAnimation(scaleAnimation(0.54f, 1f, 0.54f, 1f, 500));
                     layoutPanelChannel.setVisibility(View.INVISIBLE);
-                    recyclerView.requestFocus();
 
                 }
 
                 return true;
+
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+
+                spinnerGroup.performClick();
+
             default:
                 return super.onKeyDown(keyCode, event);
         }
@@ -324,22 +358,6 @@ public class MainActivity extends AppCompatActivity implements OnClickListenerBt
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        //startActivity(new Intent(MainActivity.this, GroupChannelActivity.class));
-
-
-
-//        String deviceType = "Unknown";
-//        if (Build.MODEL.contains("phone")) {
-//            super.onBackPressed();
-//            deviceType = "Phone";
-//        } else if (Build.MODEL.contains("tablet")) {
-//
-//            deviceType = "Tablet";
-//        } else if (Build.MODEL.contains("tv")) {
-//            deviceType = "TV";
-//            spinnerGroup.requestFocus();
-//            spinnerGroup.performClick();
-//        }
 
     }
 

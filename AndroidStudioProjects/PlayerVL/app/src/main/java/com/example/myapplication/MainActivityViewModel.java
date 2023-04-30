@@ -10,13 +10,16 @@ import androidx.lifecycle.MutableLiveData;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.Consumer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivityViewModel extends AndroidViewModel {
@@ -27,6 +30,7 @@ public class MainActivityViewModel extends AndroidViewModel {
     private final MutableLiveData<String> groupNameLD;
     private List<Channel> channels;
 
+
     public MainActivityViewModel(@NonNull Application application) {
         super(application);
 
@@ -36,11 +40,20 @@ public class MainActivityViewModel extends AndroidViewModel {
         compositeDisposable = new CompositeDisposable();
         groupNameLD = new MutableLiveData<>();
 
+
+
     }
 
-    /* В зависимости от name group заполняем  channels и передаем  player*/
-    public MutableLiveData<List<Channel>> getChannelsLD(String grName) {
+    /* Подписываемся на этот метод для получения channels*/
+    public LiveData<List<Channel>> getChannelsLD() {
+        return channelsLD;
+    }
 
+    /* В методе фильтруем channels (избранное или нет) и отдаем в LiveData channelsLD*/
+    public void setChannelsLD(String grName) {
+
+        //String grName = groupNameLD.getValue();
+        Log.d("nameGroupViewModel-55", grName);
         List<Channel> channelArrayList = new ArrayList<>(); // Собираем  каналы с именем плэйлиста
         Disposable disposable = Completable.fromAction(() -> {
             if (grName.equals("Избранное")) {
@@ -69,18 +82,20 @@ public class MainActivityViewModel extends AndroidViewModel {
                 .subscribe(() -> channelsLD.setValue(channelArrayList));
 
         compositeDisposable.add(disposable);
-        return channelsLD;
+
     }
 
-    /* Возвращает имена групп, используем для заполения спинера*/
+    /* Подписываемся на этот метод для получения groups (заполняем спинер)*/
     public LiveData<List<String>> getGroupsLD() {
         return db.channelEntityDAO().getGroupsActive();
     }
 
+
     /* В активити через этот метод устанавливаем значение */
     public void setGroupName(String groupName) {
-        groupNameLD.setValue(groupName);
-        Log.d("nameGrpFrom ViewModel ", groupName);
+        groupNameLD.setValue(groupName); // Меняем значение в groupNameLD в LiveDta
+        setChannelsLD(groupName); // Через этот метод возвращаем значения channels в LiveData channelsLD ;
+
     }
 
     /* Устанавливает Like на канале */
@@ -98,6 +113,24 @@ public class MainActivityViewModel extends AndroidViewModel {
 
         compositeDisposable.add(disposable);
     }
+
+    /* Устанавливает активность на канале */
+    public void setActivated(Channel channel){
+
+        Disposable disposable = Completable.fromAction(new Action() {
+            @Override
+            public void run() throws Throwable {
+                db.channelEntityDAO().setActivatedClear();
+                db.channelEntityDAO().setActivated(channel.getId(), 1);
+            }
+        }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe();
+
+        compositeDisposable.add(disposable);
+
+    }
+
 
     @Override
     protected void onCleared() {

@@ -52,8 +52,8 @@ public interface ChannelEntityDAO {
     /**
      * Выбирает все каналы по имени группы
      */
-    @Query("SELECT * FROM channels WHERE `group` = :group")
-    List<Channel> getByGroup(String group);
+    @Query("SELECT * FROM channels WHERE `group` = :group AND visible = 1")
+    LiveData<List<Channel>> getByGroup(String group);
 
     /**
      * Скрывает каналы по id плэйлиста. Если плэйлист не активный то каналы принадлежащие плэйлисту будут скрыты
@@ -65,12 +65,12 @@ public interface ChannelEntityDAO {
      * Выбирает все каналы у которых в плэйлистах видимость 0 или 1
      */
     @Query("SELECT channels.* FROM channels LEFT JOIN  playlist " +
-            "ON channels.playlist_id=playlist.id " +
+            "ON channels.playlist_id=playlist.playlist_id " +
             "WHERE channels.visible = :active")
     List<Channel> getChannelsByActivePlaylist(int active);
 
     @Query("SELECT channels.* FROM channels LEFT JOIN  playlist " +
-            "ON channels.playlist_id=playlist.id " +
+            "ON channels.playlist_id=playlist.playlist_id " +
             "WHERE channels.visible = :active")
     LiveData<List<Channel>> getChannelsByActivePlaylistLD(int active);
 
@@ -92,10 +92,7 @@ public interface ChannelEntityDAO {
     @Query("SELECT `like` FROM channels WHERE id = :id")
     int isActive(long id);
 
-    /**
-     * Обновляет каналы, меняет Like
-     *
-     */
+    /** Обновляет каналы, меняет Like */
     @Query("UPDATE channels SET `like` = :like WHERE id = :id")
     void updateLike(long id, int like);
 
@@ -114,4 +111,16 @@ public interface ChannelEntityDAO {
     /** Возвращает названия групп из активных каналов*/
     @Query("SELECT DISTINCT `group` from channels WHERE visible = 1")
     LiveData<List<String>> getGroupsActive();
+
+    /** Устанавливает текущий канал активность канала */
+    @Query("UPDATE channels SET  activated = :activate WHERE id = :id")
+    void  setActivated(long id, int activate);
+
+    /** Делает все каналы не активными */
+    @Query("UPDATE channels SET activated = 0")
+    void  setActivatedClear();
+
+    @Query("SELECT * FROM channels WHERE `visible` = 1 AND `group` = :groupName")
+    LiveData<List<Channel>> getVisibleChannelsByGroup(String groupName);
+
 }

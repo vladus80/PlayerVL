@@ -7,6 +7,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.core.util.Pools;
 
+import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -56,6 +57,8 @@ public class PlayerInit {
                 if (error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS){
                     Toast.makeText(context, "Ошибка источника 404", Toast.LENGTH_SHORT).show();
                     player.play();
+
+                    DefaultRenderersFactory defaultRenderersFactory;
 
                 }
 

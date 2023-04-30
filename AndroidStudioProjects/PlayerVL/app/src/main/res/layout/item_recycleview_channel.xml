@@ -4,10 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/layout_recyclerview_channel"
     android:layout_width="match_parent"
-    android:layout_height="100dp"
-    android:layout_marginBottom="1px"
-    android:background="#3E3737"
-    android:orientation="horizontal">
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="0px"
+    android:orientation="horizontal"
+    android:padding="2dp">
 
 
     <TextView
@@ -37,7 +37,8 @@
         android:layout_weight="3"
         android:gravity="start|center_vertical"
         android:padding="2dp"
-        android:textSize="12sp"
+        android:textSize="14sp"
+        android:textStyle="bold"
         tools:visibility="visible" />
 
     <TextView

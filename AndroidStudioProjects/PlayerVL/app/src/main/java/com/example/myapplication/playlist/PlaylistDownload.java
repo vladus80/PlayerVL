@@ -20,7 +20,9 @@ public class PlaylistDownload {
 
 
         List<Channel> channels = new ArrayList<>();
-        long playlistId = db.playlistDAO().insert(new PlaylistData(0, namePlaylist, "", filePlaylist, active));
+
+        PlaylistData playlist = new PlaylistData(0, namePlaylist, "", filePlaylist, active);
+        long playlistId = db.playlistDAO().insert(playlist);
         List<VLM3uEntity> vlm3uEntities = VlM3uParser.parse(filePlaylist);
 
         for (VLM3uEntity vlm3u : vlm3uEntities) {
@@ -31,7 +33,10 @@ public class PlaylistDownload {
                     vlm3u.getLogoChannel(),  // url логотипа
                     Channel.LIKE,            // нравится
                     active,                 // видимый
-                    playlistId));           // id плэйлиста
+                    playlistId,             // id плэйлиста
+                    Channel.NOT_ACTIVATED    // Текущий активный канал: 0- не активный 1- активный
+
+            ));
 
         }
 

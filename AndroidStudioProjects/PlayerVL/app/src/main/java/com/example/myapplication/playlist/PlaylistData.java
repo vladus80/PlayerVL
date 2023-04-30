@@ -11,9 +11,10 @@ import java.util.Objects;
 @Entity(tableName = "playlist")
 public class PlaylistData implements Serializable {
 
-    @ColumnInfo(name = "id")
+    @ColumnInfo(name = "playlist_id")
     @PrimaryKey(autoGenerate = true)
     long id;
+    @ColumnInfo(name = "playlist_name")
     String name;
     String provider;
     String path;
@@ -28,6 +29,9 @@ public class PlaylistData implements Serializable {
         this.provider = provider;
         this.path = path;
         this.active = active;
+    }
+
+    public PlaylistData() {
     }
 
     public long getId() {

@@ -28,8 +28,6 @@ import com.example.myapplication.playlist.PlaylistActivity;
 
 public class GroupChannelActivity extends AppCompatActivity {
 
-    private GroupChannelViewModel  viewModel;
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_app, menu);
@@ -42,22 +40,18 @@ public class GroupChannelActivity extends AppCompatActivity {
         switch (id) {
             case R.id.menuItemPlaylist:
                 Intent intent = new Intent(getApplicationContext(), PlaylistActivity.class);
-                //intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
-                //finishAffinity();
-                // Действие при выборе пункта меню 1
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-
-    ListView mListView;
-    TextView textViewInfo;
-    List<Channel> channelList = null;
-    List<ModelItemListViewGroup> mListItemGroupAndCountChannels = null;
-    TextView nameGroupTextView;
+    private GroupChannelViewModel  viewModel;
+    private ListView mListView;
+    private TextView textViewInfo;
+    private List<ModelItemListViewGroup> mListItemGroupAndCountChannels = null;
+    private TextView nameGroupTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,9 +64,8 @@ public class GroupChannelActivity extends AppCompatActivity {
         viewModel = new ViewModelProvider(this).get(GroupChannelViewModel.class);
 
         setTitle("Группы каналов"); // Устанавливаем заголовок активити
+
         /*Загружаем каналы из базы данных */
-
-
         viewModel.getCountChannelsInGroup();
         viewModel.getchannelsActiveList().observe(this, new Observer<List<Channel>>() {
             @Override
@@ -112,8 +105,6 @@ public class GroupChannelActivity extends AppCompatActivity {
                 Intent intent = new Intent(mListView.getContext(), MainActivity.class);
                 intent.putExtra("name_group", nameGroup);
                 mListView.getContext().startActivity(intent);
-                Log.d("getIntent-117 Group", nameGroup);
-                //finish();
 
             }
         });

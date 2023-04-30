@@ -6,6 +6,7 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
+import androidx.room.Embedded;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Ignore;
@@ -19,6 +20,7 @@ import net.bjoernpetersen.m3u.model.M3uEntry;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,13 +34,13 @@ import com.vladus.parser.VlM3uParser;
         tableName = "channels",
         foreignKeys = @ForeignKey(
                 entity = PlaylistData.class,
-                parentColumns = "id",
+                parentColumns = "playlist_id",
                 childColumns = "playlist_id",
                 onDelete = ForeignKey.CASCADE
         ),
         indices = @Index(value = {"playlist_id"})
 )
-public class Channel {
+public class Channel implements Serializable {
     @PrimaryKey(autoGenerate = true)
     @NonNull
     private long id;
@@ -58,6 +60,11 @@ public class Channel {
     private long playlist_id;
     @ColumnInfo(name = "visible")
     private int visible;
+    @ColumnInfo(name = "activated")
+    private int activated;
+
+    @Ignore
+    private PlaylistData playlist;
 
     @Ignore
     private M3uEntry m3uEntry;
@@ -80,13 +87,19 @@ public class Channel {
     @Ignore
     public final static int INVISIBLE  = 0;
     @Ignore
+    public final static int ACTIVATED  = 1;
+    @Ignore
+    public final static int NOT_ACTIVATED  = 0;
+    @Ignore
     private String playlistName;
 
 
 
+
+    public Channel(){};
     public Channel(long id, String nameChannel, String groupChannel,
                    String epgId, String urlChannel, String urlLogo,
-                   int like, int visible, long playlist_id)
+                   int like, int visible, long playlist_id, int activated)
     {
         this.nameChannel = nameChannel;
         this.groupChannel = groupChannel;
@@ -97,6 +110,8 @@ public class Channel {
         this.visible= visible;
         this.like = like;
         this.id = id;
+        this.activated = activated;
+        this.playlist = playlist;
     }
 
     @Ignore
@@ -187,6 +202,9 @@ public class Channel {
         System.out.println(channelList);
     }
 
+
+
+
     public List<Channel> getChannelList() {
         return channelList;
     }
@@ -276,6 +294,26 @@ public class Channel {
     public void setPlaylistName(String playlistName) {
         this.playlistName = playlistName;
     }
+    public int getActivated() {
+        return activated;
+    }
+
+    public void setActivated(int activated) {
+        this.activated = activated;
+    }
+
+
+    public void setUrlLogo(String urlLogo) {
+        this.urlLogo = urlLogo;
+    }
+
+    public PlaylistData getPlaylist() {
+        return playlist;
+    }
+
+    public void setPlaylist(PlaylistData playlist) {
+        this.playlist = playlist;
+    }
 
     @Override
     public String toString() {
@@ -287,10 +325,9 @@ public class Channel {
                 ", urlChannel='" + urlChannel + '\'' +
                 ", urlLogo='" + urlLogo + '\'' +
                 ", like=" + like +
-                ", playlist_id=" + playlist_id +
+               // ", playlist_id=" + playlist_id +
                 ", visible=" + visible +
+                ", activated=" + activated +
                 '}';
     }
-
-
 }

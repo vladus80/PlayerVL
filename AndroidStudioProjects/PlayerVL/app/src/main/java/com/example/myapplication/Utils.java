@@ -11,25 +11,25 @@ import java.io.InputStream;
 public class Utils {
 
     //private  Context context;
-    public static File getPlaylistFromRaw(Context mContext) {
-
-        InputStream inputStream = mContext.getResources().openRawResource(R.raw.playlistizi); // создание InputStream
-        File file = new File(mContext.getFilesDir(), "playlist_file.m3u8"); // создание объекта File для сохранения файла
-        try {
-            FileOutputStream outputStream = new FileOutputStream(file); // создание FileOutputStream
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length); // запись данных в FileOutputStream
-            }
-            outputStream.flush();
-            outputStream.close();
-            inputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return file;
-    }
+//    public static File getPlaylistFromRaw(Context mContext) {
+//
+//        // InputStream inputStream = mContext.getResources().openRawResource(R.raw.playlistizi); // создание InputStream
+////        File file = new File(mContext.getFilesDir(), "playlist_file.m3u8"); // создание объекта File для сохранения файла
+////        try {
+////            FileOutputStream outputStream = new FileOutputStream(file); // создание FileOutputStream
+////            byte[] buffer = new byte[1024];
+////            int length;
+////            while ((length = inputStream.read(buffer)) > 0) {
+////                outputStream.write(buffer, 0, length); // запись данных в FileOutputStream
+////            }
+////            outputStream.flush();
+////            outputStream.close();
+////            inputStream.close();
+////        } catch (IOException e) {
+////            e.printStackTrace();
+////        }
+////        return file;
+//    }
 
 
 
@@ -66,7 +66,9 @@ public class Utils {
             }
         }, executor);
         return future;
-    }*/
-}
+    }
 
+    */
+
+}
 

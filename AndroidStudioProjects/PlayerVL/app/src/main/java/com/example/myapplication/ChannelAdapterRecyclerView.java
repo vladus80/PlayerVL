@@ -1,6 +1,8 @@
 package com.example.myapplication;
 
+import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +11,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.res.ResourcesCompat;
@@ -25,6 +28,9 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
     private static OnClickListenerItem onClickListenerItem;
     private List<Channel> channels;
     private int selectedPosition = RecyclerView.NO_POSITION;
+    private int activatedPosition = 0 ;
+
+    private int count = 0;
 
     public ChannelAdapterRecyclerView(List<Channel> channels, OnClickListenerBtnLike onClickListenerBtnLike,
                                       OnClickListenerItem onClickListenerItem) {
@@ -37,12 +43,14 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
 
     public void setChannels(List<Channel> channels) {
         this.channels = channels;
+        notifyDataSetChanged();
     }
 
     @NonNull
     @Override
     public ChannelAdapterRecyclerView.ItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
+        Log.d("ViewHolderCount", "Создано ViewHolder " + ++count);
         View holderView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_recycleview_channel, parent, false);
 
@@ -56,17 +64,16 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
                 .load(channels.get(position).getUrlLogo())
                 .into(holder.mImageView);
 
-
         //String nameGroup = channels.get(position).getPlaylist_id();
 
         String name = channels.get(position).getNameChannel();
         String group = channels.get(position).getGroupChannel();
         String playlistName = channels.get(position).getPlaylistName();
         holder.textViewNimberChan.setText(String.valueOf(position + 1));
-        holder.mTextView.setText(name);
+        holder.mTextViewNameChannel.setText(name);
         holder.mTextViewGroup.setText(group + "\n" + playlistName);
 
-        /* Устанваливаем звездочку при клике на звездочку*/
+        /* Устанавливаем звездочку при клике на звездочку*/
         int like = channels.get(position).getLike();
         if (like == 0) {
             holder.btnStarLike.setImageDrawable(ResourcesCompat
@@ -79,12 +86,19 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
         }
 
 
-        if (selectedPosition == position) {
-            holder.itemView.setBackgroundColor(Color.DKGRAY);
-        } else {
-            holder.itemView.setBackgroundColor(Color.rgb(62, 55, 55));
-        }
+        int activated = channels.get(position).getActivated();
+        if (activated == 1 ){
 
+           // holder.itemView.setBackgroundColor(Color.CYAN);
+
+            holder.mTextViewNameChannel.setTextColor(Color.GREEN);
+            holder.itemView.setBackgroundColor(Color.DKGRAY);
+            activatedPosition = holder.getBindingAdapterPosition();
+        }else{
+            holder.itemView.setBackgroundColor(Color.GRAY);
+            holder.mTextViewNameChannel.setTextColor(Color.WHITE);
+            //holder.itemView.setBackgroundColor(Color.BLUE);
+        }
 
     }
 
@@ -103,19 +117,18 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
 
     // Создаем ViewHolder
     public class ItemViewHolder extends RecyclerView.ViewHolder {
-        public TextView mTextView;
+        public TextView mTextViewNameChannel;
         public ImageView mImageView;
         public RecyclerView recyclerView;
         public TextView mTextViewGroup;
         public ImageButton btnStarLike;
         public LinearLayout linearLayout;
-        public RecyclerView recyclerView_land;
         public TextView textViewNimberChan;
 
         public ItemViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            mTextView = itemView.findViewById(R.id.title_text_view);
+            mTextViewNameChannel = itemView.findViewById(R.id.title_text_view);
             mImageView = itemView.findViewById(R.id.image_view);
             recyclerView = itemView.findViewById(R.id.recycler_view);
             mTextViewGroup = itemView.findViewById(R.id.group_text_view);
@@ -144,16 +157,62 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
                 @Override
                 public void onClick(View view) {
 
-                    int previousSelectedPosition = selectedPosition;
-                    selectedPosition = getBindingAdapterPosition();
-                    notifyItemChanged(previousSelectedPosition);
-                    notifyItemChanged(selectedPosition);
+                    int prevPosition = activatedPosition;          // активная позиция при загрузке
+                    int curPosition = getBindingAdapterPosition(); // Текущая позиция при клике
 
-                    if (onClickListenerItem != null) {
-                        onClickListenerItem.onClickItem(selectedPosition);
+                    onClickListenerItem.onClickItem(curPosition);
+                    onClickListenerItem.onClickItem(channels.get(curPosition));
+                    onClickListenerItem.getPosition(getBindingAdapterPosition());
+                    int activated = channels.get(curPosition).getActivated();  // Узнаем является ли активным
+
+                    if(channels.size()< prevPosition){prevPosition = 0;}
+
+
+                    if (activated == 0) {
+                        channels.get(curPosition).setActivated(1);
+
+                        if(channels.get(prevPosition) != null){
+                            channels.get(prevPosition).setActivated(0);
+                        }
+
                     }
+                    notifyItemChanged(curPosition);
+                    notifyItemChanged(prevPosition);
                 }
 
+            });
+
+            itemView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+                @Override
+                public void onScrollChange(View view, int i, int i1, int i2, int i3) {
+                    view.requestFocus();
+                }
+            });
+
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+
+                    int posit = getBindingAdapterPosition();
+                    onClickListenerBtnLike.onClickBtnLike(channels.get(posit));
+
+                    int like = channels.get(posit).getLike();
+                    if (like == 0) {
+                        channels.get(posit).setLike(1);
+                        Toast.makeText(view.getContext(), view.getContext().
+                                getString(R.string.channel) + channels.get(posit).getNameChannel()
+                                + " добавлен в избранное", Toast.LENGTH_SHORT).show();
+                    } else {
+                        channels.get(posit).setLike(0);
+                        Toast.makeText(view.getContext(), view.getContext().
+                                        getString(R.string.channel) + channels.get(posit).
+                                        getNameChannel() + " удален из избранного",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    notifyItemChanged(posit);
+                    return true;
+                }
             });
 
             itemView.setOnKeyListener(new View.OnKeyListener() {
@@ -164,40 +223,51 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
                         switch (keyCode) {
                             case KeyEvent.KEYCODE_DPAD_DOWN:
                                 View nextFocus = view.focusSearch(View.FOCUS_DOWN);
+                                View curFocus  = view.findFocus();
 
                                 if (nextFocus != null) {
-                                    clearSelections();
+                                    //clearSelections();
+
+                                    int position = getBindingAdapterPosition();
                                     nextFocus.requestFocus();
-                                    nextFocus.setBackgroundColor(Color.BLACK);
-                                    //notifyDataSetChanged();
+                                   // nextFocus.setBackgroundColor(Color.BLACK);
+                                   // curFocus.setBackgroundColor(Color.rgb(62, 55, 55));
+                                    //notifyItemChanged(position);
+
                                     return true;
                                 }
                                 break;
                             case KeyEvent.KEYCODE_DPAD_UP:
                                 View prevFocus = view.focusSearch(View.FOCUS_UP);
-                                if (prevFocus != null) {
-                                    clearSelections();
-                                    prevFocus.requestFocus();
-                                    prevFocus.setBackgroundColor(Color.BLACK);
+                                View curFocus2  = view.findFocus();
 
+                                if (prevFocus != null) {
+                                    //clearSelections();
+                                    int position = getBindingAdapterPosition();
+
+
+                                    prevFocus.requestFocus();
+                                    //prevFocus.setBackgroundColor(Color.BLACK);
+                                    //curFocus2.setBackgroundColor(Color.rgb(62, 55, 55));
+                                   // notifyItemChanged(position);
                                     return true;
                                 }
                                 //notifyDataSetChanged();
                                 break;
                             case KeyEvent.KEYCODE_DPAD_RIGHT:
 
-                                int posit = getBindingAdapterPosition();
-
-                                /*Like-Dislike при нажатии кнопки на пульте*/
-                                onClickListenerBtnLike.onClickBtnLike(channels.get(posit));
-
-                                int like = channels.get(posit).getLike();
-                                if (like == 0) {
-                                    channels.get(posit).setLike(1);
-                                } else {
-                                    channels.get(posit).setLike(0);
-                                }
-                                notifyItemChanged(posit);
+//                                int posit = getBindingAdapterPosition();
+//
+//                                /*Like-Dislike при нажатии кнопки на пульте*/
+//                                onClickListenerBtnLike.onClickBtnLike(channels.get(posit));
+//
+//                                int like = channels.get(posit).getLike();
+//                                if (like == 0) {
+//                                    channels.get(posit).setLike(1);
+//                                } else {
+//                                    channels.get(posit).setLike(0);
+//                                }
+//                                notifyItemChanged(posit);
                                 break;
                         }
 
@@ -205,17 +275,25 @@ public class ChannelAdapterRecyclerView extends RecyclerView.Adapter<ChannelAdap
                     return false;
                 }
             });
+
+            int[][] states = new int[][] {
+
+                    new int[] { android.R.attr.state_focused },
+                    new int[] { android.R.attr.state_enabled}
+            };
+
+            int[] colors = new int[] {
+                    Color.BLACK, // цвет при получении фокуса
+                    Color.DKGRAY // цвет в обычном состоянии
+            };
+
+            ColorStateList colorStateList = new ColorStateList(states, colors);
+            itemView.setBackgroundTintList(colorStateList);
+
         }
 
-
-        private void clearSelections() {
-            for (int i = 0; i < getItemCount(); i++) {
-                itemView.setBackgroundColor(Color.rgb(62, 55, 55));
-            }
-        }
     }
 
 }
 
-// Toast.makeText(itemView.getContext(), "короткое нажатие", Toast.LENGTH_SHORT).show();
 

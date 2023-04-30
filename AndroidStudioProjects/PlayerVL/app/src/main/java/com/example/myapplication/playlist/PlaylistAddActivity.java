@@ -6,6 +6,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -104,6 +106,24 @@ public class PlaylistAddActivity extends AppCompatActivity {
         db = AppDateBase.getInstance(getApplication());
         context = getApplicationContext();
         intent = getIntent();
+
+
+        int[][] states = new int[][] {
+
+                new int[] { android.R.attr.state_focused },
+                new int[] { android.R.attr.state_enabled}
+        };
+
+        int[] colors = new int[] {
+                Color.GREEN, // цвет при получении фокуса
+                Color.WHITE // цвет в обычном состоянии
+        };
+
+        ColorStateList colorStateList = new ColorStateList(states, colors);
+        buttonSelectPlaylist.setBackgroundTintList(colorStateList);
+        buttonSavePlaylist.setBackgroundTintList(colorStateList);
+        buttonDeletePlaylist.setBackgroundTintList(colorStateList);
+
 
 
         // Запрашиваем  права на доступ к файлам
